@@ -1,0 +1,32 @@
+version: "3.8"
+
+services:
+  mock_code_api:
+    image: mock_code_api:dev
+    build:
+      context: api
+      dockerfile: dockerfile
+    container_name: mock_code_api
+    ports:
+      - "6005:5000"
+    env_file:
+      - api/.env
+    depends_on:
+      - mock_code_db
+    volumes:
+      - ./api:/code
+    command: ["air", "-c", ".air.toml"]
+
+  mock_code_db:
+    image: postgres:15.3
+    container_name: mock_code_db
+    volumes:
+      - mock_code_db_data:/var/lib/postgresql/data/
+    ports:
+      - "5544:5432"
+    env_file:
+      - api/.env
+
+
+volumes:
+  mock_code_db_data:
