@@ -4,17 +4,17 @@ services:
   mock_code_api:
     image: mock_code_api:dev
     build:
-      context: api
+      context: backend
       dockerfile: dockerfile
     container_name: mock_code_api
     ports:
       - "6005:5000"
     env_file:
-      - api/.env
+      - backend/.env
     depends_on:
       - mock_code_db
     volumes:
-      - ./api:/code
+      - ./backend:/code
     command: ["air", "-c", ".air.toml"]
 
   mock_code_db:
@@ -25,7 +25,7 @@ services:
     ports:
       - "5544:5432"
     env_file:
-      - api/.env
+      - backend/.env
 
 
 volumes:
