@@ -1,0 +1,6 @@
+.bannerBackground {
+  background-image: url("../public/banner-bg.png");
+  background-position: top;
+  background-repeat: no-repeat;
+  background-size: cover;
+}
