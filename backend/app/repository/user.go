@@ -1,6 +1,8 @@
 package repository
 
 import (
+	"strings"
+
 	domain "github.com/Volomn/mock_code/backend/domain/models"
 	"gorm.io/gorm"
 )
@@ -19,6 +21,6 @@ func (repo *UserRepo) SaveUser(user *domain.User) {
 
 func (repo *UserRepo) GetUserByEmail(email string) *domain.User {
 	var result domain.User
-	repo.db.Where(&domain.User{Email: email}).First(&result)
+	repo.db.Where(&domain.User{Email: strings.ToLower(email)}).First(&result)
 	return &result
 }

@@ -1,21 +1,30 @@
 package app
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"net/url"
 	"strings"
+	"time"
 
 	"github.com/Volomn/mock_code/backend/app/repository"
 	domain "github.com/Volomn/mock_code/backend/domain/models"
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/credentials"
+	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 	"github.com/spf13/viper"
+	"golang.org/x/crypto/bcrypt"
 	"golang.org/x/exp/slog"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
 	"gopkg.in/guregu/null.v4"
+	"gorm.io/datatypes"
 	"gorm.io/gorm"
 )
 
@@ -28,8 +37,10 @@ type ApplicationInterface interface {
 }
 
 type Application struct {
-	db       *gorm.DB
-	userRepo *repository.UserRepo
+	db            *gorm.DB
+	userRepo      *repository.UserRepo
+	adminRepo     *repository.AdminRepo
+	challengeRepo *repository.ChallengeRepo
 }
 
 func NewApplication(db *gorm.DB) *Application {
@@ -37,6 +48,16 @@ func NewApplication(db *gorm.DB) *Application {
 		db:       db,
 		userRepo: repository.NewUserRepository(db),
 	}
+}
+
+func hashPassword(password string) (string, error) {
+	bytes, err := bcrypt.GenerateFromPassword([]byte(password), 14)
+	return string(bytes), err
+}
+
+func IsPasswordMatch(password, hash string) bool {
+	err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(password))
+	return err == nil
 }
 
 func (application *Application) SignupOrSignInWithGoogle(code string) (domain.User, error) {
@@ -202,4 +223,112 @@ func (application *Application) SignupOrSignInWithGithub(code string) (domain.Us
 		application.userRepo.SaveUser(&user)
 		return user, nil
 	}
+}
+
+func (application *Application) CreateAdmin(firstName string, lastName string, email string, password string) (domain.Admin, error) {
+	existingAdmin := application.adminRepo.GetAdminByEmail(strings.ToLower(email))
+	if existingAdmin != nil {
+		slog.Error("Admin already exists", "email", strings.ToLower(email))
+		return domain.Admin{}, errors.New("Admin already exists")
+	}
+
+	password, err := hashPassword(password)
+	if err != nil {
+		slog.Error("Hashing password error", "error", err.Error())
+		return domain.Admin{}, err
+	}
+	admin := domain.Admin{
+		FirstName: firstName,
+		LastName:  lastName,
+		Email:     email,
+		Password:  password,
+	}
+	application.adminRepo.SaveAdmin(&admin)
+	return admin, nil
+}
+
+func (application *Application) AddChallenge(adminId uint, name string, problemStatement string, judge string) (domain.Challenge, error) {
+	admin := application.adminRepo.GetById(adminId)
+	if admin == nil {
+		return domain.Challenge{}, errors.New("Admin not found")
+	}
+
+	existingChallenge := application.challengeRepo.GetByName(name)
+	if existingChallenge != nil {
+		return domain.Challenge{}, errors.New("Challenge already exists")
+	}
+	challenge := domain.Challenge{
+		Name:             name,
+		ProblemStatement: problemStatement,
+		Judge:            judge,
+		OpenedAt:         null.NewTime(time.Time{}, false),
+		InputFiles:       datatypes.NewJSONSlice([]string{}),
+	}
+	application.challengeRepo.SaveChallenge(&challenge)
+	return challenge, nil
+}
+
+func (application *Application) AddChallengeInputFile(adminId uint, challengeId uint, inputFile io.Reader, filename string, contentType string) (domain.Challenge, error) {
+	admin := application.adminRepo.GetById(adminId)
+	if admin == nil {
+		return domain.Challenge{}, errors.New("Admin not found")
+	}
+	challenge := application.challengeRepo.GetById(challengeId)
+	if challenge == nil {
+		return domain.Challenge{}, errors.New("Challenge not found")
+	}
+
+	sess, err := session.NewSessionWithOptions(session.Options{
+		Profile: "default",
+		Config: aws.Config{
+			Region:      aws.String(viper.GetString(("AWS_REGION"))),
+			Credentials: credentials.NewStaticCredentials(viper.GetString("AWS_ACCESS_KEY_ID"), viper.GetString("AWS_SECRET_ACCESS_KEY"), ""),
+		},
+	})
+
+	if err != nil {
+		slog.Error("Failed to initialize new aws session", "error", err)
+		return domain.Challenge{}, errors.New(err.Error())
+	}
+
+	var fileContent []byte
+	_, err = inputFile.Read(fileContent)
+
+	if err != nil {
+		slog.Error("Error reading input file", "error", err.Error())
+	}
+
+	uploadParams := s3manager.UploadInput{
+		ACL:                aws.String("public-read"),
+		Bucket:             aws.String(viper.GetString("AWS_S3_BUCKET")),
+		Body:               bytes.NewReader(fileContent),
+		Key:                aws.String(filename),
+		ContentDisposition: aws.String("attachment"),
+		ContentType:        aws.String(contentType),
+	}
+
+	uploader := s3manager.NewUploader(sess)
+
+	// Perform an upload.
+	result, err := uploader.Upload(&uploadParams)
+
+	if err != nil {
+		slog.Error("Input file upload failed", "error", err.Error())
+		return domain.Challenge{}, err
+	}
+
+	slog.Info("Input file uploaded successfully", "location", result.Location)
+	inputFilesList := challenge.InputFiles
+	inputFilesList = append(inputFilesList, result.Location)
+	challenge.InputFiles = inputFilesList
+	application.challengeRepo.SaveChallenge(challenge)
+	return *challenge, nil
+}
+
+func (application *Application) OpenChallenge() (domain.Challenge, error) {
+	return domain.Challenge{}, nil
+}
+
+func (application *Application) CloseChallenge() (domain.Challenge, error) {
+	return domain.Challenge{}, nil
 }

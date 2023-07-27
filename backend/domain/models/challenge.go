@@ -13,11 +13,10 @@ type Challenge struct {
 	CreatedAt        time.Time
 	UpdatedAt        time.Time
 	DeletedAt        gorm.DeletedAt `gorm:"index"`
-	Name             string
-	IsOpened         bool
 	OpenedAt         null.Time
+	Name             string
 	ProblemStatement string
-	InputFiles       datatypes.JSON
+	InputFiles       datatypes.JSONSlice[string]
 	Judge            string
 	Submissions      []Submission `gorm:"foreignKey:ChallengeId"`
 }
