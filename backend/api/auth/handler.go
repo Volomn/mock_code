@@ -40,7 +40,7 @@ func GetGoogleAuthorizationURL(w http.ResponseWriter, r *http.Request) {
 	oauthConf := oauth2.Config{
 		ClientID:     viper.GetString("GOOGLE_CLIENT_ID"),
 		ClientSecret: viper.GetString("GOOGLE_CLIENT_SECRET"),
-		RedirectURL:  "http://localhost:6005/api/auth/google",
+		RedirectURL:  viper.GetString("GOOGLE_REDIRECT_URL"),
 		Scopes:       []string{"https://www.googleapis.com/auth/userinfo.email", "https://www.googleapis.com/auth/userinfo.profile"},
 		Endpoint:     google.Endpoint,
 	}
@@ -115,7 +115,7 @@ func GetGithubAuthorizationURL(w http.ResponseWriter, r *http.Request) {
 	oauthConf := oauth2.Config{
 		ClientID:     viper.GetString("GITHUB_CLIENT_ID"),
 		ClientSecret: viper.GetString("GITHUB_CLIENT_SECRET"),
-		RedirectURL:  "http://localhost:6005/api/auth/github",
+		RedirectURL:  viper.GetString("GITHUB_REDIRECT_URL"),
 		Scopes:       []string{"user"},
 		Endpoint: oauth2.Endpoint{
 			AuthURL:   "https://github.com/login/oauth/authorize",
