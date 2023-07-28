@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 
@@ -10,7 +11,18 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/spf13/viper"
 	"golang.org/x/exp/slog"
+	"gorm.io/gorm"
 )
+
+func DatabaseMiddleware(db *gorm.DB) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			ctx := context.WithValue(r.Context(), "db", db)
+			next.ServeHTTP(w, r.WithContext(ctx))
+		})
+	}
+
+}
 
 func main() {
 	viper.AutomaticEnv()
@@ -29,6 +41,9 @@ func main() {
 	apiRouter := api.GetApiRouter(app)
 
 	mainRouter := chi.NewRouter()
+
+	// add datbase middleware
+	mainRouter.Use(DatabaseMiddleware(db))
 
 	// mount api router on path /api
 	mainRouter.Mount("/api", apiRouter)
