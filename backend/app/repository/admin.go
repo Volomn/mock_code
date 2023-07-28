@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"errors"
 	"strings"
 
 	domain "github.com/Volomn/mock_code/backend/domain/models"
@@ -20,13 +21,19 @@ func (repo *AdminRepo) SaveAdmin(admin *domain.Admin) {
 }
 
 func (repo *AdminRepo) GetAdminByEmail(email string) *domain.Admin {
-	var result domain.Admin
-	repo.db.Where(&domain.Admin{Email: strings.ToLower(email)}).First(&result)
-	return &result
+	var admin domain.Admin
+	res := repo.db.Where(&domain.Admin{Email: strings.ToLower(email)}).First(&admin)
+	if errors.Is(res.Error, gorm.ErrRecordNotFound) {
+		return nil
+	}
+	return &admin
 }
 
 func (repo *AdminRepo) GetById(id uint) *domain.Admin {
 	admin := domain.Admin{ID: id}
-	repo.db.First(&admin)
+	res := repo.db.First(&admin)
+	if errors.Is(res.Error, gorm.ErrRecordNotFound) {
+		return nil
+	}
 	return &admin
 }

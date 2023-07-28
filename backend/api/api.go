@@ -15,7 +15,7 @@ import (
 func GetApiRouter(app *app.Application) chi.Router {
 	// create api router
 	router := chi.NewRouter()
-	tokenAuth := jwtauth.New("HS256", viper.GetString("AUTH_SECRET_KEY"), nil)
+	tokenAuth := jwtauth.New("HS256", []byte(viper.GetString("AUTH_SECRET_KEY")), nil)
 
 	router.Use(middleware.RequestID)
 	router.Use(middleware.Logger)

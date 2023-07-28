@@ -38,15 +38,17 @@ type ApplicationInterface interface {
 
 type Application struct {
 	db            *gorm.DB
-	userRepo      *repository.UserRepo
-	adminRepo     *repository.AdminRepo
-	challengeRepo *repository.ChallengeRepo
+	UserRepo      *repository.UserRepo
+	AdminRepo     *repository.AdminRepo
+	ChallengeRepo *repository.ChallengeRepo
 }
 
 func NewApplication(db *gorm.DB) *Application {
 	return &Application{
-		db:       db,
-		userRepo: repository.NewUserRepository(db),
+		db:            db,
+		UserRepo:      repository.NewUserRepository(db),
+		AdminRepo:     repository.NewAdminRepository(db),
+		ChallengeRepo: repository.NewChallengeRepository(db),
 	}
 }
 
@@ -118,7 +120,7 @@ func (application *Application) SignupOrSignInWithGoogle(code string) (domain.Us
 		}
 
 		slog.Info("Google user is", "user", googleUser, "splitName", strings.Split(googleUser.Name, " "))
-		existingUser := application.userRepo.GetUserByEmail(googleUser.Email)
+		existingUser := application.UserRepo.GetUserByEmail(googleUser.Email)
 		var userPrimaryKey uint
 
 		if existingUser != nil {
@@ -130,7 +132,7 @@ func (application *Application) SignupOrSignInWithGoogle(code string) (domain.Us
 			LastName:  null.NewString(strings.Split(googleUser.Name, " ")[1], true),
 			Email:     googleUser.Email,
 		}
-		application.userRepo.SaveUser(&user)
+		application.UserRepo.SaveUser(&user)
 		return user, nil
 	}
 }
@@ -208,7 +210,7 @@ func (application *Application) SignupOrSignInWithGithub(code string) (domain.Us
 		}
 
 		slog.Info("Github user is", "user", githubUser, "splitName", strings.Split(githubUser.Name, " "))
-		existingUser := application.userRepo.GetUserByEmail(githubUser.Email)
+		existingUser := application.UserRepo.GetUserByEmail(githubUser.Email)
 		var userPrimaryKey uint
 
 		if existingUser != nil {
@@ -220,13 +222,13 @@ func (application *Application) SignupOrSignInWithGithub(code string) (domain.Us
 			LastName:  null.NewString(strings.Split(githubUser.Name, " ")[1], true),
 			Email:     githubUser.Email,
 		}
-		application.userRepo.SaveUser(&user)
+		application.UserRepo.SaveUser(&user)
 		return user, nil
 	}
 }
 
 func (application *Application) CreateAdmin(firstName string, lastName string, email string, password string) (domain.Admin, error) {
-	existingAdmin := application.adminRepo.GetAdminByEmail(strings.ToLower(email))
+	existingAdmin := application.AdminRepo.GetAdminByEmail(strings.ToLower(email))
 	if existingAdmin != nil {
 		slog.Error("Admin already exists", "email", strings.ToLower(email))
 		return domain.Admin{}, errors.New("Admin already exists")
@@ -243,17 +245,17 @@ func (application *Application) CreateAdmin(firstName string, lastName string, e
 		Email:     email,
 		Password:  password,
 	}
-	application.adminRepo.SaveAdmin(&admin)
+	application.AdminRepo.SaveAdmin(&admin)
 	return admin, nil
 }
 
 func (application *Application) AddChallenge(adminId uint, name string, problemStatement string, judge string) (domain.Challenge, error) {
-	admin := application.adminRepo.GetById(adminId)
+	admin := application.AdminRepo.GetById(adminId)
 	if admin == nil {
 		return domain.Challenge{}, errors.New("Admin not found")
 	}
 
-	existingChallenge := application.challengeRepo.GetByName(name)
+	existingChallenge := application.ChallengeRepo.GetByName(name)
 	if existingChallenge != nil {
 		return domain.Challenge{}, errors.New("Challenge already exists")
 	}
@@ -264,16 +266,16 @@ func (application *Application) AddChallenge(adminId uint, name string, problemS
 		OpenedAt:         null.NewTime(time.Time{}, false),
 		InputFiles:       datatypes.NewJSONSlice([]string{}),
 	}
-	application.challengeRepo.SaveChallenge(&challenge)
+	application.ChallengeRepo.SaveChallenge(&challenge)
 	return challenge, nil
 }
 
 func (application *Application) AddChallengeInputFile(adminId uint, challengeId uint, inputFile io.Reader, filename string, contentType string) (domain.Challenge, error) {
-	admin := application.adminRepo.GetById(adminId)
+	admin := application.AdminRepo.GetById(adminId)
 	if admin == nil {
 		return domain.Challenge{}, errors.New("Admin not found")
 	}
-	challenge := application.challengeRepo.GetById(challengeId)
+	challenge := application.ChallengeRepo.GetById(challengeId)
 	if challenge == nil {
 		return domain.Challenge{}, errors.New("Challenge not found")
 	}
@@ -321,7 +323,7 @@ func (application *Application) AddChallengeInputFile(adminId uint, challengeId 
 	inputFilesList := challenge.InputFiles
 	inputFilesList = append(inputFilesList, result.Location)
 	challenge.InputFiles = inputFilesList
-	application.challengeRepo.SaveChallenge(challenge)
+	application.ChallengeRepo.SaveChallenge(challenge)
 	return *challenge, nil
 }
 

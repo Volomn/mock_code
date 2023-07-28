@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"errors"
 	"strings"
 
 	domain "github.com/Volomn/mock_code/backend/domain/models"
@@ -21,6 +22,9 @@ func (repo *UserRepo) SaveUser(user *domain.User) {
 
 func (repo *UserRepo) GetUserByEmail(email string) *domain.User {
 	var result domain.User
-	repo.db.Where(&domain.User{Email: strings.ToLower(email)}).First(&result)
+	res := repo.db.Where(&domain.User{Email: strings.ToLower(email)}).First(&result)
+	if errors.Is(res.Error, gorm.ErrRecordNotFound) {
+		return nil
+	}
 	return &result
 }

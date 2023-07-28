@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"errors"
 	"strings"
 
 	domain "github.com/Volomn/mock_code/backend/domain/models"
@@ -21,12 +22,18 @@ func (repo *ChallengeRepo) SaveChallenge(challenge *domain.Challenge) {
 
 func (repo *ChallengeRepo) GetByName(name string) *domain.Challenge {
 	var result domain.Challenge
-	repo.db.Where(&domain.Challenge{Name: strings.ToLower(name)}).First(&result)
+	res := repo.db.Where(&domain.Challenge{Name: strings.ToLower(name)}).First(&result)
+	if errors.Is(res.Error, gorm.ErrRecordNotFound) {
+		return nil
+	}
 	return &result
 }
 
 func (repo *ChallengeRepo) GetById(id uint) *domain.Challenge {
 	challenge := domain.Challenge{ID: id}
-	repo.db.First(&challenge)
+	res := repo.db.First(&challenge)
+	if errors.Is(res.Error, gorm.ErrRecordNotFound) {
+		return nil
+	}
 	return &challenge
 }

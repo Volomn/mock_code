@@ -39,7 +39,7 @@ func AddChallenge(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	render.Status(r, http.StatusCreated)
-	render.JSON(w, r, map[string]string{"msg": "Challenge addess successfully"})
+	render.JSON(w, r, map[string]string{"msg": "Challenge added successfully"})
 
 }
 
