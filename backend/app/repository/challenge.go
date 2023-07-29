@@ -37,3 +37,15 @@ func (repo *ChallengeRepo) GetById(id uint) *domain.Challenge {
 	}
 	return &challenge
 }
+
+func (repo *ChallengeRepo) Fetch(isOpened *bool) []*domain.Challenge {
+	var challenges []*domain.Challenge
+	if isOpened == nil {
+		repo.db.Find(&challenges)
+	} else if *isOpened == true {
+		repo.db.Not("OpenedAt = ?", nil).Find(&challenges)
+	} else {
+		repo.db.Where("OpenedAt = ?", nil).Find(&challenges)
+	}
+	return challenges
+}

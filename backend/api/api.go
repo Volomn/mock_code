@@ -1,9 +1,9 @@
 package api
 
 import (
-	"github.com/Volomn/mock_code/backend/api/auth"
-	"github.com/Volomn/mock_code/backend/api/challenge"
 	mymiddleware "github.com/Volomn/mock_code/backend/api/middleware"
+	"github.com/Volomn/mock_code/backend/api/routers/auth"
+	"github.com/Volomn/mock_code/backend/api/routers/challenge"
 	"github.com/Volomn/mock_code/backend/app"
 	"github.com/go-chi/chi/middleware"
 	"github.com/go-chi/chi/v5"
