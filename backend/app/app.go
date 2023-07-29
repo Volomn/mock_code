@@ -24,7 +24,6 @@ import (
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
 	"gopkg.in/guregu/null.v4"
-	"gorm.io/datatypes"
 	"gorm.io/gorm"
 )
 
@@ -264,7 +263,7 @@ func (application *Application) AddChallenge(adminId uint, name string, problemS
 		ProblemStatement: problemStatement,
 		Judge:            judge,
 		OpenedAt:         null.NewTime(time.Time{}, false),
-		InputFiles:       datatypes.NewJSONSlice([]string{}),
+		InputFile:        null.NewString("", false),
 	}
 	application.ChallengeRepo.SaveChallenge(&challenge)
 	return challenge, nil
@@ -304,7 +303,7 @@ func (application *Application) AddChallengeInputFile(adminId uint, challengeId 
 		ACL:                aws.String("public-read"),
 		Bucket:             aws.String(viper.GetString("AWS_S3_BUCKET")),
 		Body:               bytes.NewReader(fileContent),
-		Key:                aws.String(filename),
+		Key:                aws.String(fmt.Sprintf("%s/%s/%s/%s", "challenges", challenge.Name, "input", filename)),
 		ContentDisposition: aws.String("attachment"),
 		ContentType:        aws.String(contentType),
 	}
@@ -320,9 +319,7 @@ func (application *Application) AddChallengeInputFile(adminId uint, challengeId 
 	}
 
 	slog.Info("Input file uploaded successfully", "location", result.Location)
-	inputFilesList := challenge.InputFiles
-	inputFilesList = append(inputFilesList, result.Location)
-	challenge.InputFiles = inputFilesList
+	challenge.InputFile = null.NewString(result.Location, true)
 	application.ChallengeRepo.SaveChallenge(challenge)
 	return *challenge, nil
 }

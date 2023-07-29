@@ -1,13 +1,16 @@
 package challenge
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 	"strconv"
 	"time"
 
+	"github.com/Volomn/mock_code/backend/api/util"
 	"github.com/Volomn/mock_code/backend/app"
 	domain "github.com/Volomn/mock_code/backend/domain/models"
+	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
 	"golang.org/x/exp/slog"
 )
@@ -29,7 +32,7 @@ type ChallengeResponse struct {
 	IsOpened         bool      `json:"isOpened"`
 	Name             string    `json:"name"`
 	ProblemStatement string    `json:"problemStatement"`
-	InputFiles       []string  `json:"inputFiles"`
+	InputFile        *string   `json:"inputFile"`
 }
 
 func (rd *ChallengeResponse) Render(w http.ResponseWriter, r *http.Request) error {
@@ -44,7 +47,7 @@ func NewChallengeResponse(challenge *domain.Challenge) *ChallengeResponse {
 		IsOpened:         challenge.OpenedAt.Valid,
 		Name:             challenge.Name,
 		ProblemStatement: challenge.ProblemStatement,
-		InputFiles:       challenge.InputFiles,
+		InputFile:        challenge.InputFile.Ptr(),
 	}
 }
 
@@ -80,7 +83,50 @@ func AddChallenge(w http.ResponseWriter, r *http.Request) {
 }
 
 func UploadInputFile(w http.ResponseWriter, r *http.Request) {
+	// Maximum upload of 300 MB files
+	r.ParseMultipartForm(300 << 20)
 
+	// Get handler for filename, size and headers
+	file, handler, err := r.FormFile("inputFile")
+	if err != nil {
+		slog.Error("Error receiving file", "error", err.Error())
+		render.Render(w, r, util.ErrorBadRequest(err, nil))
+		return
+	}
+
+	defer file.Close()
+	application := r.Context().Value("app").(*app.Application)
+
+	challengeIdString := chi.URLParam(r, "challengeId")
+	slog.Info("Challenge id from request", "id", challengeIdString)
+	challengeId, err := strconv.ParseUint(challengeIdString, 10, 0)
+	if err != nil {
+		msg := "Invalid challengeId"
+		render.Render(w, r, util.ErrorUnprocessableContent(err, &msg))
+		return
+	}
+	challenge := application.ChallengeRepo.GetById(uint(challengeId))
+	if challenge == nil {
+		msg := "Challenge not found"
+		render.Render(w, r, util.ErrorNotFound(errors.New(msg), &msg))
+		return
+	}
+	slog.Info("File content headers", "header", handler.Header)
+	authAdmin := r.Context().Value("authAdmin").(*domain.Admin)
+	contentType := handler.Header.Get("Content-Type")
+	if contentType != "application/zip" {
+		errorMessage := "Invalid file format"
+		render.Render(w, r, util.ErrorBadRequest(errors.New(errorMessage), &errorMessage))
+		return
+	}
+	*challenge, err = application.AddChallengeInputFile(authAdmin.ID, challenge.ID, file, handler.Filename, handler.Header.Get("Content-Type"))
+	if err != nil {
+		slog.Error("Error uploading challenge input file", "error", err.Error())
+		render.Render(w, r, util.ErrorBadRequest(err, nil))
+		return
+	}
+	render.Status(r, 200)
+	render.JSON(w, r, map[string]interface{}{"msg": "Successful"})
 }
 
 func FetchChallenges(w http.ResponseWriter, r *http.Request) {

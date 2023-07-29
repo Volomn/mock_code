@@ -18,26 +18,44 @@ func (e *ErrResponse) Render(w http.ResponseWriter, r *http.Request) error {
 	return nil
 }
 
-func ErrorBadRequest(err error) render.Renderer {
+func ErrorBadRequest(err error, errorMessage *string) render.Renderer {
+	var responseErrorMessage string
+	if errorMessage == nil {
+		responseErrorMessage = "Bad request"
+	} else {
+		responseErrorMessage = *errorMessage
+	}
 	return &ErrResponse{
 		Err:            err,
 		HTTPStatusCode: 400,
-		ErrorMessage:   "Bad request",
+		ErrorMessage:   responseErrorMessage,
 	}
 }
 
-func ErrorNotFound(err error) render.Renderer {
+func ErrorNotFound(err error, errorMessage *string) render.Renderer {
+	var responseErrorMessage string
+	if errorMessage == nil {
+		responseErrorMessage = "Not found"
+	} else {
+		responseErrorMessage = *errorMessage
+	}
 	return &ErrResponse{
 		Err:            err,
 		HTTPStatusCode: 404,
-		ErrorMessage:   "Not found",
+		ErrorMessage:   responseErrorMessage,
 	}
 }
 
-func ErrorUnprocessableContent(err error) render.Renderer {
+func ErrorUnprocessableContent(err error, errorMessage *string) render.Renderer {
+	var responseErrorMessage string
+	if errorMessage == nil {
+		responseErrorMessage = "invalid request"
+	} else {
+		responseErrorMessage = *errorMessage
+	}
 	return &ErrResponse{
 		Err:            err,
 		HTTPStatusCode: 422,
-		ErrorMessage:   "Invalid request",
+		ErrorMessage:   responseErrorMessage,
 	}
 }
