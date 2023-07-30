@@ -8,5 +8,6 @@ func GetAuthRouter() chi.Router {
 	router.Post("/google", SignUpOrLoginWithGoogle)
 	router.Get("/github", GetGithubAuthorizationURL)
 	router.Post("/github", SignUpOrLoginWithGithub)
+	router.Post("/admin", AuthenticateAdmin)
 	return router
 }

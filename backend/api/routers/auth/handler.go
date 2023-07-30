@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"fmt"
 	"net/http"
 	"net/url"
 	"strings"
@@ -8,6 +9,7 @@ import (
 
 	"github.com/Volomn/mock_code/backend/app"
 	domain "github.com/Volomn/mock_code/backend/domain/models"
+	"github.com/go-chi/jwtauth"
 	"github.com/go-chi/render"
 	"github.com/golang-jwt/jwt"
 	"github.com/spf13/viper"
@@ -16,11 +18,20 @@ import (
 	"golang.org/x/oauth2/google"
 )
 
+type AuthenticateAdminRequest struct {
+	Email    string `json:"email"`
+	Password string `json:"password"`
+}
+
+func (a *AuthenticateAdminRequest) Bind(r *http.Request) error {
+	return nil
+}
+
 func getAccessToken(user domain.User) (string, error) {
 	secret := viper.GetString("AUTH_SECRET_KEY")
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"sub": user.ID,
-		"exp": time.Now().UTC().Add(5 * time.Minute),
+		"authId": user.ID,
+		"exp":    time.Now().UTC().Add(24 * time.Hour),
 	})
 	return token.SignedString([]byte(secret))
 
@@ -188,4 +199,40 @@ func SignUpOrLoginWithGithub(w http.ResponseWriter, r *http.Request) {
 	render.Status(r, 200)
 	render.JSON(w, r, map[string]string{"token": accessToken, "token_type": "Bearer"})
 	return
+}
+
+func AuthenticateAdmin(w http.ResponseWriter, r *http.Request) {
+	data := &AuthenticateAdminRequest{}
+	if err := render.Bind(r, data); err != nil {
+		slog.Info("binding input data failed", "error", err.Error())
+		render.Status(r, 422)
+		render.JSON(w, r, map[string]string{"msg": fmt.Sprintf("Invalid request payload, %s", err.Error())})
+		return
+	}
+
+	application := r.Context().Value("app").(*app.Application)
+	adminiRepo := application.AdminRepo
+	admin := adminiRepo.GetAdminByEmail(data.Email)
+	if admin == nil {
+		render.Status(r, 422)
+		render.JSON(w, r, map[string]string{"msg": fmt.Sprintf("Invalid login credentials")})
+		return
+	}
+	if app.IsPasswordMatch(data.Password, admin.Password) == false {
+		render.Status(r, 422)
+		render.JSON(w, r, map[string]string{"msg": fmt.Sprintf("Invalid login credentials")})
+		return
+	}
+	tokenAuth := jwtauth.New("HS256", []byte(viper.GetString("AUTH_SECRET_KEY")), nil)
+	_, tokenString, err := tokenAuth.Encode(map[string]interface{}{"isAdmin": true, "authId": admin.ID, "exp": time.Now().UTC().Add(24 * time.Hour)})
+	if err != nil {
+		slog.Error("Error creating admin access token", "error", err.Error())
+		render.Status(r, 422)
+		render.JSON(w, r, map[string]string{"msg": fmt.Sprintf("Invalid login credentials")})
+		return
+	}
+	render.Status(r, 200)
+	render.JSON(w, r, map[string]string{"tokenType": "Bearer", "accessToken": tokenString})
+	return
+
 }

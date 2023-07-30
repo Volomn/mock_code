@@ -3,6 +3,7 @@ package middleware
 import (
 	"context"
 	"net/http"
+	"reflect"
 
 	"github.com/Volomn/mock_code/backend/app"
 	domain "github.com/Volomn/mock_code/backend/domain/models"
@@ -33,10 +34,24 @@ func AuthenticationMiddleware(next http.Handler) http.Handler {
 			render.JSON(w, r, map[string]string{"msg": "Unauthorized"})
 			return
 		}
+		slog.Info("Token claims", "claims", claims)
 		isAdmin := claims["isAdmin"].(bool)
-		authId := claims["sub"].(uint)
+		authId := claims["authId"].(float64)
+		slog.Info("Type of authId is ", "type", reflect.TypeOf(authId))
+		if err != nil {
+			slog.Error("Error authenticating token", "error", err.Error())
+			render.Status(r, 401)
+			render.JSON(w, r, map[string]string{"msg": "Unauthorized"})
+			return
+		}
+		if err != nil {
+			slog.Error("Error authenticating token", "error", err.Error())
+			render.Status(r, 401)
+			render.JSON(w, r, map[string]string{"msg": "Unauthorized"})
+			return
+		}
 		if isAdmin == true {
-			admin := &domain.Admin{ID: authId}
+			admin := &domain.Admin{ID: uint(authId)}
 			db.First(admin)
 			if admin == nil {
 				slog.Error("Error authenticating admin token", "adminId", authId, "error", "Admin not found")
@@ -46,7 +61,7 @@ func AuthenticationMiddleware(next http.Handler) http.Handler {
 			}
 			ctx = context.WithValue(r.Context(), "authAdmin", admin)
 		} else {
-			user := &domain.User{ID: authId}
+			user := &domain.User{ID: uint(authId)}
 			db.First(user)
 			if user == nil {
 				slog.Error("Error authenticating user token", "adminId", authId, "error", "User not found")
@@ -63,8 +78,8 @@ func AuthenticationMiddleware(next http.Handler) http.Handler {
 func AuthorizationMiddleWare(allowUser bool, allowAdmin bool) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			authUser := r.Context().Value("authUser").(*domain.User)
-			authAdmin := r.Context().Value("authADmin").(*domain.Admin)
+			authUser := r.Context().Value("authUser")
+			authAdmin := r.Context().Value("authADmin")
 			if allowUser == false && authUser != nil {
 				slog.Error("User not allowed")
 				render.Status(r, 403)
