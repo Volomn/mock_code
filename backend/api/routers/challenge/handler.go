@@ -32,7 +32,7 @@ type ChallengeResponse struct {
 	IsOpened         bool      `json:"isOpened"`
 	Name             string    `json:"name"`
 	ProblemStatement string    `json:"problemStatement"`
-	InputFile        *string   `json:"inputFile"`
+	InputFiles       []string  `json:"inputFiles"`
 }
 
 func (rd *ChallengeResponse) Render(w http.ResponseWriter, r *http.Request) error {
@@ -47,7 +47,7 @@ func NewChallengeResponse(challenge *domain.Challenge) *ChallengeResponse {
 		IsOpened:         challenge.OpenedAt.Valid,
 		Name:             challenge.Name,
 		ProblemStatement: challenge.ProblemStatement,
-		InputFile:        challenge.InputFile.Ptr(),
+		InputFiles:       challenge.InputFiles,
 	}
 }
 
@@ -114,7 +114,7 @@ func UploadInputFile(w http.ResponseWriter, r *http.Request) {
 	slog.Info("File content headers", "header", handler.Header)
 	authAdmin := r.Context().Value("authAdmin").(*domain.Admin)
 	contentType := handler.Header.Get("Content-Type")
-	if contentType != "application/zip" {
+	if contentType != "text/plain" {
 		errorMessage := "Invalid file format"
 		render.Render(w, r, util.ErrorBadRequest(errors.New(errorMessage), &errorMessage))
 		return

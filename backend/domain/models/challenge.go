@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"gopkg.in/guregu/null.v4"
+	"gorm.io/datatypes"
 	"gorm.io/gorm"
 )
 
@@ -15,7 +16,7 @@ type Challenge struct {
 	OpenedAt         null.Time
 	Name             string
 	ProblemStatement string
-	InputFile        null.String
+	InputFiles       datatypes.JSONSlice[string]
 	Judge            string
 	Submissions      []Submission `gorm:"foreignKey:ChallengeId"`
 }
