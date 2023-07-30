@@ -19,12 +19,12 @@ type LeaderboardItem struct {
 }
 
 type LeaderboardItemResponse struct {
-	ID              uint
-	UserID          uint
-	SubmissionScore float32
-	Email           string
-	FirstName       string
-	LastName        string
+	ID              uint    `json:"id"`
+	UserID          uint    `json:"userId"`
+	SubmissionScore float32 `json:"submissionScore"`
+	Email           string  `json:"email"`
+	FirstName       string  `json:"firstName"`
+	LastName        string  `json:"lastName"`
 }
 
 func (rd *LeaderboardItemResponse) Render(w http.ResponseWriter, r *http.Request) error {
