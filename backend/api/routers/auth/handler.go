@@ -28,12 +28,9 @@ func (a *AuthenticateAdminRequest) Bind(r *http.Request) error {
 }
 
 func getAccessToken(user domain.User) (string, error) {
-	secret := viper.GetString("AUTH_SECRET_KEY")
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"authId": user.ID,
-		"exp":    time.Now().UTC().Add(24 * time.Hour),
-	})
-	return token.SignedString([]byte(secret))
+	tokenAuth := jwtauth.New("HS256", []byte(viper.GetString("AUTH_SECRET_KEY")), nil)
+	_, tokenString, err := tokenAuth.Encode(map[string]interface{}{"isAdmin": false, "authId": user.ID, "exp": time.Now().UTC().Add(24 * time.Hour)})
+	return tokenString, err
 
 }
 
