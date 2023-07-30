@@ -10,5 +10,6 @@ import (
 func GetSubmissionRouter() chi.Router {
 	var router = chi.NewRouter()
 	router.Post("/", middleware.AuthenticationMiddleware(middleware.AuthorizationMiddleWare(true, false)(http.HandlerFunc(SubmitSolution))).(http.HandlerFunc))
+	router.Get("/", middleware.AuthenticationMiddleware(middleware.AuthorizationMiddleWare(true, false)(http.HandlerFunc(FetchSolutions))).(http.HandlerFunc))
 	return router
 }

@@ -28,8 +28,19 @@ func (repo *SubmissionRepo) GetById(id uint) *domain.Submission {
 	return &submission
 }
 
-func (repo *SubmissionRepo) Fetch() []*domain.Submission {
+func (repo *SubmissionRepo) Fetch(userId *uint, challengeId *uint) []*domain.Submission {
 	var submissions []*domain.Submission
-	repo.db.Find(&submissions)
+	if userId == nil && challengeId == nil {
+		repo.db.Preload("Solutions").Find(&submissions)
+		return submissions
+	}
+	query := &domain.Submission{}
+	if userId != nil {
+		query.UserId = *userId
+	}
+	if challengeId != nil {
+		query.ChallengeId = *challengeId
+	}
+	repo.db.Where(query).Preload("Solutions").Find(&submissions)
 	return submissions
 }

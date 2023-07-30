@@ -1,6 +1,7 @@
 package submission
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -88,11 +89,12 @@ func SubmitSolution(w http.ResponseWriter, r *http.Request) {
 			render.Render(w, r, util.ErrorBadRequest(err, &errorMessage))
 			return
 		}
-		if outputFileHandle.Header.Get("Content-Type") != "text/plain" {
-			errorMessage := fmt.Sprintf("Invalid output file %s", outputFileHandle.Filename)
-			render.Render(w, r, util.ErrorBadRequest(err, &errorMessage))
-			return
-		}
+		// slog.Info("output file content type", "ct", outputFileHandle.Header.Get("Content-Type"))
+		// if outputFileHandle.Header.Get("Content-Type") != "text/plain" {
+		// 	errorMessage := fmt.Sprintf("Invalid output file %s", outputFileHandle.Filename)
+		// 	render.Render(w, r, util.ErrorBadRequest(err, &errorMessage))
+		// 	return
+		// }
 		solutions[index] = app.Solution{
 			InputFileName:         inputFileNames[index],
 			OutputFile:            outputFile,
@@ -114,4 +116,37 @@ func SubmitSolution(w http.ResponseWriter, r *http.Request) {
 	render.Status(r, 200)
 	render.Render(w, r, NewSubmissionResponse(&submission))
 	return
+}
+
+func FetchSolutions(w http.ResponseWriter, r *http.Request) {
+	challengeIdString := r.URL.Query().Get("challengeId")
+	challengeId, err := strconv.ParseUint(challengeIdString, 10, 0)
+	if err != nil {
+		msg := "Invalid challengeId"
+		render.Render(w, r, util.ErrorUnprocessableContent(err, &msg))
+		return
+	}
+
+	application := r.Context().Value("app").(*app.Application)
+	authUser := r.Context().Value("authUser").(*domain.User)
+
+	challengeRepo := application.ChallengeRepo
+	challenge := challengeRepo.GetById(uint(challengeId))
+
+	if challenge == nil {
+		errorMessage := "Challenge not found"
+		render.Render(w, r, util.ErrorNotFound(errors.New("Challenge not found"), &errorMessage))
+		return
+	}
+
+	submissionRepo := application.SubmissionRepo
+	submissions := submissionRepo.Fetch(&authUser.ID, &challenge.ID)
+
+	render.Status(r, 200)
+	if err := render.RenderList(w, r, NewSubmissionListResponse(submissions)); err != nil {
+		slog.Error("Unable to render response for fetch submissions", "error", err.Error())
+		panic(err.Error())
+	}
+	return
+
 }
