@@ -9,9 +9,11 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
+	"reflect"
 	"strings"
 	"time"
 
+	"github.com/Volomn/mock_code/backend/app/judge"
 	"github.com/Volomn/mock_code/backend/app/repository"
 	domain "github.com/Volomn/mock_code/backend/domain/models"
 	"github.com/aws/aws-sdk-go/aws"
@@ -324,8 +326,24 @@ func (application *Application) AddChallengeInputFile(adminId uint, challengeId 
 	return *challenge, nil
 }
 
-func (application *Application) OpenChallenge() (domain.Challenge, error) {
-	return domain.Challenge{}, nil
+func (application *Application) OpenChallenge(adminId uint, challengeId uint) (domain.Challenge, error) {
+	admin := application.AdminRepo.GetById(adminId)
+	if admin == nil {
+		return domain.Challenge{}, errors.New("Admin not found")
+	}
+	challenge := application.ChallengeRepo.GetById(challengeId)
+	if challenge == nil {
+		return domain.Challenge{}, errors.New("Challenge not found")
+	}
+
+	method := reflect.ValueOf(&judge.Judge{}).MethodByName(challenge.Judge)
+	if method.IsValid() == false {
+		return domain.Challenge{}, errors.New("Judge method not found")
+	}
+
+	challenge.OpenedAt = null.NewTime(time.Now().UTC(), true)
+	application.ChallengeRepo.SaveChallenge(challenge)
+	return *challenge, nil
 }
 
 func (application *Application) CloseChallenge() (domain.Challenge, error) {

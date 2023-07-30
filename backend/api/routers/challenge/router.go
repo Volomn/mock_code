@@ -12,5 +12,6 @@ func GetChallengeRouter() chi.Router {
 	router.Post("/", middleware.AuthenticationMiddleware(middleware.AuthorizationMiddleWare(false, true)(http.HandlerFunc(AddChallenge))).(http.HandlerFunc))
 	router.Get("/", FetchChallenges)
 	router.Post("/{challengeId}/input", middleware.AuthenticationMiddleware(middleware.AuthorizationMiddleWare(false, true)(http.HandlerFunc(UploadInputFile))).(http.HandlerFunc))
+	router.Post("/{challengeId}/open", middleware.AuthenticationMiddleware(middleware.AuthorizationMiddleWare(false, true)(http.HandlerFunc(OpenChallenge))).(http.HandlerFunc))
 	return router
 }

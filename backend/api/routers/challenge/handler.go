@@ -133,11 +133,11 @@ func FetchChallenges(w http.ResponseWriter, r *http.Request) {
 	var result []*domain.Challenge
 	application := r.Context().Value("app").(*app.Application)
 	challengeRepo := application.ChallengeRepo
-	isOpenedString := r.URL.Query().Get("isOpened")
-	if isOpenedString == "" {
+	isOpenString := r.URL.Query().Get("isOpen")
+	if isOpenString == "" {
 		result = challengeRepo.Fetch(nil)
 	} else {
-		isOpened, err := strconv.ParseBool(isOpenedString)
+		isOpened, err := strconv.ParseBool(isOpenString)
 		if err != nil {
 			render.Status(r, 422)
 			render.JSON(w, r, map[string]string{"msg": "Invalid boolean value"})
@@ -150,4 +150,34 @@ func FetchChallenges(w http.ResponseWriter, r *http.Request) {
 		panic(err.Error())
 	}
 
+}
+
+func OpenChallenge(w http.ResponseWriter, r *http.Request) {
+	application := r.Context().Value("app").(*app.Application)
+
+	challengeIdString := chi.URLParam(r, "challengeId")
+	slog.Info("Challenge id from request", "id", challengeIdString)
+	challengeId, err := strconv.ParseUint(challengeIdString, 10, 0)
+	if err != nil {
+		msg := "Invalid challengeId"
+		render.Render(w, r, util.ErrorUnprocessableContent(err, &msg))
+		return
+	}
+	challenge := application.ChallengeRepo.GetById(uint(challengeId))
+	if challenge == nil {
+		msg := "Challenge not found"
+		render.Render(w, r, util.ErrorNotFound(errors.New(msg), &msg))
+		return
+	}
+	authAdmin := r.Context().Value("authAdmin").(*domain.Admin)
+
+	*challenge, err = application.OpenChallenge(authAdmin.ID, challenge.ID)
+	if err != nil {
+		erroMessage := err.Error()
+		slog.Error("Error opening challenge", "error", erroMessage)
+		render.Render(w, r, util.ErrorBadRequest(err, &erroMessage))
+		return
+	}
+	render.Status(r, 200)
+	render.JSON(w, r, map[string]interface{}{"msg": "Successful"})
 }

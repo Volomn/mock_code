@@ -3,8 +3,10 @@ package repository
 import (
 	"errors"
 	"strings"
+	"time"
 
 	domain "github.com/Volomn/mock_code/backend/domain/models"
+	"gopkg.in/guregu/null.v4"
 	"gorm.io/gorm"
 )
 
@@ -43,9 +45,9 @@ func (repo *ChallengeRepo) Fetch(isOpened *bool) []*domain.Challenge {
 	if isOpened == nil {
 		repo.db.Find(&challenges)
 	} else if *isOpened == true {
-		repo.db.Not("OpenedAt = ?", nil).Find(&challenges)
+		repo.db.Not(&domain.Challenge{OpenedAt: null.NewTime(time.Now(), false)}).Find(&challenges)
 	} else {
-		repo.db.Where("OpenedAt = ?", nil).Find(&challenges)
+		repo.db.Where(&domain.Challenge{OpenedAt: null.NewTime(time.Now(), false)}).Find(&challenges)
 	}
 	return challenges
 }
