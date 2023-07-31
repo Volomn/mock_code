@@ -19,6 +19,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 	"github.com/spf13/viper"
 	"golang.org/x/crypto/bcrypt"
@@ -39,18 +40,20 @@ type ApplicationInterface interface {
 }
 
 type Application struct {
-	db            *gorm.DB
-	UserRepo      *repository.UserRepo
-	AdminRepo     *repository.AdminRepo
-	ChallengeRepo *repository.ChallengeRepo
+	db             *gorm.DB
+	UserRepo       *repository.UserRepo
+	AdminRepo      *repository.AdminRepo
+	ChallengeRepo  *repository.ChallengeRepo
+	SubmissionRepo *repository.SubmissionRepo
 }
 
 func NewApplication(db *gorm.DB) *Application {
 	return &Application{
-		db:            db,
-		UserRepo:      repository.NewUserRepository(db),
-		AdminRepo:     repository.NewAdminRepository(db),
-		ChallengeRepo: repository.NewChallengeRepository(db),
+		db:             db,
+		UserRepo:       repository.NewUserRepository(db),
+		AdminRepo:      repository.NewAdminRepository(db),
+		ChallengeRepo:  repository.NewChallengeRepository(db),
+		SubmissionRepo: repository.NewSubmissionRepository(db),
 	}
 }
 
@@ -73,7 +76,7 @@ func (application *Application) SignupOrSignInWithGoogle(code string) (domain.Us
 		oauthConf := oauth2.Config{
 			ClientID:     viper.GetString("GOOGLE_CLIENT_ID"),
 			ClientSecret: viper.GetString("GOOGLE_CLIENT_SECRET"),
-			RedirectURL:  "http://localhost:6005/api/auth/google",
+			RedirectURL:  viper.GetString("GOOGLE_REDIRECT_URL"),
 			Scopes:       []string{"https://www.googleapis.com/auth/userinfo.email"},
 			Endpoint:     google.Endpoint,
 		}
@@ -148,7 +151,7 @@ func (application *Application) SignupOrSignInWithGithub(code string) (domain.Us
 		oauthConf := oauth2.Config{
 			ClientID:     viper.GetString("GITHUB_CLIENT_ID"),
 			ClientSecret: viper.GetString("GITHUB_CLIENT_SECRET"),
-			RedirectURL:  "http://localhost:6005/api/auth/github",
+			RedirectURL:  viper.GetString("GITHUB_REDIRECT_URL"),
 			Scopes:       []string{"user"},
 			Endpoint: oauth2.Endpoint{
 				AuthURL:   "https://github.com/login/oauth/authorize",
@@ -351,4 +354,107 @@ func (application *Application) OpenChallenge(adminId uint, challengeId uint) (d
 
 func (application *Application) CloseChallenge() (domain.Challenge, error) {
 	return domain.Challenge{}, nil
+}
+
+type Solution struct {
+	InputFileName         string
+	OutputFile            io.Reader
+	OutputFileName        string
+	OutputFileContentType string
+}
+
+func (application *Application) SubmitSolution(userId uint, challengeId uint, solutions []Solution) (domain.Submission, error) {
+	user := application.UserRepo.GetById(userId)
+	if user == nil {
+		return domain.Submission{}, errors.New("User not found")
+	}
+	challenge := application.ChallengeRepo.GetById(challengeId)
+	if challenge == nil {
+		return domain.Submission{}, errors.New("Challenge not found")
+	}
+	if challenge.OpenedAt.Valid == false {
+		return domain.Submission{}, errors.New("Challenge is not open for submissions")
+	}
+
+	sess, err := session.NewSessionWithOptions(session.Options{
+		Profile: "default",
+		Config: aws.Config{
+			Region:      aws.String(viper.GetString(("AWS_REGION"))),
+			Credentials: credentials.NewStaticCredentials(viper.GetString("AWS_ACCESS_KEY_ID"), viper.GetString("AWS_SECRET_ACCESS_KEY"), ""),
+		},
+	})
+
+	if err != nil {
+		slog.Error("Failed to initialize new aws session", "error", err)
+		return domain.Submission{}, errors.New(err.Error())
+	}
+
+	svc := s3.New(sess)
+
+	sols := make([]domain.Solution, len(solutions))
+	submissionsS3Bucket := fmt.Sprintf("%s/%s/%s/%s", "submissions", challenge.Name, fmt.Sprintf("%s_%d", user.Email, user.ID), fmt.Sprintf("Submission%s", time.Now().String()))
+
+	for index, solution := range solutions {
+		var outputFileContent []byte
+
+		uploadParams := s3manager.UploadInput{
+			ACL:                aws.String("public-read"),
+			Bucket:             aws.String(viper.GetString("AWS_S3_BUCKET")),
+			Body:               bytes.NewReader(outputFileContent),
+			Key:                aws.String(fmt.Sprintf("%s/%s", submissionsS3Bucket, solution.OutputFileName)),
+			ContentDisposition: aws.String("attachment"),
+			ContentType:        aws.String(solution.OutputFileContentType),
+		}
+		uploader := s3manager.NewUploader(sess)
+
+		// Perform an upload.
+		result, err := uploader.Upload(&uploadParams)
+
+		if err != nil {
+			slog.Error("Output file upload failed", "error", err.Error(), "inputFile", solution.InputFileName, "outputfile", solution.OutputFileName)
+			sols[index] = domain.Solution{InputFile: solution.InputFileName, OutputFile: solution.OutputFileName, ErrorMessage: null.NewString("Invalid output file", true), Score: 0}
+			continue
+		}
+
+		inputObject, err := svc.GetObject(&s3.GetObjectInput{
+			Bucket: aws.String(viper.GetString("AWS_S3_BUCKET")),
+			Key:    aws.String(fmt.Sprintf("%s/%s/%s/%s", "challenges", challenge.Name, "input", solution.InputFileName)),
+		})
+
+		if err != nil {
+			slog.Error("Error getting input file", "error", err.Error())
+			sols[index] = domain.Solution{InputFile: solution.InputFileName, OutputFile: solution.OutputFileName, ErrorMessage: null.NewString("Invalid input file", true), Score: 0}
+			continue
+		}
+
+		score, err := (&judge.Judge{}).Call(challenge.Judge, inputObject.Body, solution.OutputFile)
+		if errors.Is(err, &judge.JudgeMethoNotDefinedError{Msg: fmt.Sprintf("Judge method %s not defined", challenge.Judge)}) {
+			slog.Error("Open challenge has no judge mehtod", "challengeId", challenge.ID, "judge", challenge.Judge)
+			panic("Open challenge has no judge mehtod")
+		}
+
+		if err != nil {
+			slog.Error("Error getting input file", "error", err.Error())
+			sols[index] = domain.Solution{InputFile: solution.InputFileName, OutputFile: solution.OutputFileName, ErrorMessage: null.NewString(err.Error(), true), Score: score}
+			continue
+		}
+
+		sols[index] = domain.Solution{InputFile: solution.InputFileName, OutputFile: solution.OutputFileName, ErrorMessage: null.NewString("", false), Score: score}
+
+		_, err = solution.OutputFile.Read(outputFileContent)
+		if err != nil {
+			slog.Error("Error reading output file", "error", err.Error())
+			sols[index] = domain.Solution{InputFile: solution.InputFileName, OutputFile: solution.OutputFileName, ErrorMessage: null.NewString("Error reading output file", true), Score: score}
+			continue
+		}
+
+		slog.Info("Output file uploaded successfully", "location", result.Location)
+	}
+	submission := &domain.Submission{
+		Solutions:   sols,
+		ChallengeId: challenge.ID,
+		UserId:      user.ID,
+	}
+	application.SubmissionRepo.SaveSubmission(submission)
+	return *submission, nil
 }
