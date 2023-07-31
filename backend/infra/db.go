@@ -25,5 +25,5 @@ func GetDb() *gorm.DB {
 }
 
 func AutoMigrateDB(db *gorm.DB) {
-	db.AutoMigrate(&domain.User{}, &domain.Challenge{}, &domain.Submission{}, &domain.Admin{})
+	db.AutoMigrate(&domain.User{}, &domain.Challenge{}, &domain.Submission{}, &domain.Admin{}, &domain.Solution{})
 }

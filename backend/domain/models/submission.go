@@ -3,7 +3,6 @@ package domain
 import (
 	"time"
 
-	"gorm.io/datatypes"
 	"gorm.io/gorm"
 )
 
@@ -12,8 +11,7 @@ type Submission struct {
 	CreatedAt   time.Time
 	UpdatedAt   time.Time
 	DeletedAt   gorm.DeletedAt `gorm:"index"`
-	Score       float32
-	Details     datatypes.JSON
 	ChallengeId uint
 	UserId      uint
+	Solutions   []Solution `gorm:"foreignKey:SubmissionId"`
 }

@@ -28,3 +28,12 @@ func (repo *UserRepo) GetUserByEmail(email string) *domain.User {
 	}
 	return &result
 }
+
+func (repo *UserRepo) GetById(id uint) *domain.User {
+	user := domain.User{ID: id}
+	res := repo.db.First(&user)
+	if errors.Is(res.Error, gorm.ErrRecordNotFound) {
+		return nil
+	}
+	return &user
+}
