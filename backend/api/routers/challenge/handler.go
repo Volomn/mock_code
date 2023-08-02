@@ -25,10 +25,20 @@ func (a *AddChallengeRequest) Bind(r *http.Request) error {
 	return nil
 }
 
+type ChallengeItemResponse struct {
+	ID        uint      `json:"id"`
+	CreatedAt time.Time `json:"createdAt"`
+	IsOpened  bool      `json:"isOpened"`
+	Name      string    `json:"name"`
+}
+
+func (rd *ChallengeItemResponse) Render(w http.ResponseWriter, r *http.Request) error {
+	return nil
+}
+
 type ChallengeResponse struct {
 	ID               uint      `json:"id"`
 	CreatedAt        time.Time `json:"createdAt"`
-	UpdatedAt        time.Time `json:"updatedAt"`
 	IsOpened         bool      `json:"isOpened"`
 	Name             string    `json:"name"`
 	ProblemStatement string    `json:"problemStatement"`
@@ -39,15 +49,12 @@ func (rd *ChallengeResponse) Render(w http.ResponseWriter, r *http.Request) erro
 	return nil
 }
 
-func NewChallengeResponse(challenge *domain.Challenge) *ChallengeResponse {
-	return &ChallengeResponse{
-		ID:               challenge.ID,
-		CreatedAt:        challenge.CreatedAt,
-		UpdatedAt:        challenge.UpdatedAt,
-		IsOpened:         challenge.OpenedAt.Valid,
-		Name:             challenge.Name,
-		ProblemStatement: challenge.ProblemStatement,
-		InputFiles:       challenge.InputFiles,
+func NewChallengeItemResponse(challenge *domain.Challenge) *ChallengeItemResponse {
+	return &ChallengeItemResponse{
+		ID:        challenge.ID,
+		CreatedAt: challenge.CreatedAt,
+		IsOpened:  challenge.OpenedAt.Valid,
+		Name:      challenge.Name,
 	}
 }
 
@@ -57,6 +64,17 @@ func NewChallengeListResponse(challenges []*domain.Challenge) []render.Renderer 
 		list = append(list, NewChallengeResponse(challenge))
 	}
 	return list
+}
+
+func NewChallengeResponse(challenge *domain.Challenge) *ChallengeResponse {
+	return &ChallengeResponse{
+		ID:               challenge.ID,
+		CreatedAt:        challenge.CreatedAt,
+		IsOpened:         challenge.OpenedAt.Valid,
+		Name:             challenge.Name,
+		ProblemStatement: challenge.ProblemStatement,
+		InputFiles:       challenge.InputFiles,
+	}
 }
 
 func AddChallenge(w http.ResponseWriter, r *http.Request) {
@@ -149,6 +167,29 @@ func FetchChallenges(w http.ResponseWriter, r *http.Request) {
 		slog.Error("Unable to render response for fetch challenges", "error", err.Error())
 		panic(err.Error())
 	}
+
+}
+
+func GetChallenge(w http.ResponseWriter, r *http.Request) {
+	application := r.Context().Value("app").(*app.Application)
+
+	challengeIdString := chi.URLParam(r, "challengeId")
+	slog.Info("Challenge id from request", "id", challengeIdString)
+	challengeId, err := strconv.ParseUint(challengeIdString, 10, 0)
+	if err != nil {
+		msg := "Invalid challengeId"
+		render.Render(w, r, util.ErrorUnprocessableContent(err, &msg))
+		return
+	}
+	challenge := application.ChallengeRepo.GetById(uint(challengeId))
+	if challenge == nil {
+		msg := "Challenge not found"
+		render.Render(w, r, util.ErrorNotFound(errors.New(msg), &msg))
+		return
+	}
+	render.Status(r, 200)
+	render.Render(w, r, NewChallengeResponse(challenge))
+	return
 
 }
 
