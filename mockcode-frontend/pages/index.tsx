@@ -5,16 +5,15 @@ import GithubIcon from "@/public/github.svg";
 
 import {
   Anchor,
+  Box,
   Button,
   Center,
   Container,
   Group,
-  Skeleton,
   Text,
 } from "@mantine/core";
 import { AppLayout } from "@/layouts/app-layout";
 import { sora } from "@/utils/fonts";
-import { useGetGithubAuthUrl, useGetGoogleAuthUrl } from "@/api/auth";
 import { getGithubAuthDetails, getGoogleAuthDetails } from "@/api/lib";
 
 export default function Home({
@@ -24,14 +23,14 @@ export default function Home({
   githubAuthDetails: { to: string };
   googleAuthDetails: { to: string };
 }) {
-
-  
   return (
     <AppLayout>
-      <Center style={{ height: "calc(100vh - 90px)" }}>
+      <Center style={{ minHeight: "calc(100vh - 90px - 64px)" }}>
         <Container
           size={700}
-          style={{ textAlign: "center", fontFamily: "var(--font-sora)" }}
+          py={40}
+          ta={{ base: "left", sm: "center" }}
+          style={{ fontFamily: "var(--font-sora)" }}
           className={sora.className}
         >
           <Text
@@ -75,8 +74,15 @@ export default function Home({
               </Button>
             </Anchor>
           </Group>
-
-          <Image src={BannerVector} quality={100} alt="vector" />
+          <Container pos="relative" h={350}>
+            <Image
+              src={BannerVector}
+              style={{ objectFit: "fill" }}
+              fill
+              quality={100}
+              alt="vector"
+            />
+          </Container>
         </Container>
       </Center>
     </AppLayout>

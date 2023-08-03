@@ -29,6 +29,7 @@
     "dayjs": "^1.11.9",
     "eslint": "8.46.0",
     "eslint-config-next": "13.4.12",
+    "js-cookie": "^3.0.5",
     "jwt-decode": "^3.1.2",
     "next": "13.4.12",
     "postcss": "8.4.27",
@@ -40,6 +41,7 @@
   },
   "devDependencies": {
     "@svgr/webpack": "^8.0.1",
-    "@tanstack/eslint-plugin-query": "^4.29.25"
+    "@tanstack/eslint-plugin-query": "^4.29.25",
+    "@types/js-cookie": "^3.0.3"
   }
 }

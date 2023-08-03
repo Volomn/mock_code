@@ -1,91 +1,159 @@
+import {
+  Anchor,
+  Button,
+  Center,
+  Container,
+  LoadingOverlay,
+  Stack,
+  Text,
+} from "@mantine/core";
+import { GetServerSidePropsContext } from "next";
+import jwt_decode from "jwt-decode";
+import { parseStringToObject } from "@/utils/string-object-parser";
+import Cookies from "js-cookie";
+import {
+  getGithubAuthDetails,
+  getGoogleAuthDetails,
+  signInWithGithub,
+  signInWithGoogle,
+} from "@/api/lib";
+
 import { AppLayout } from "@/layouts/app-layout";
-import { Anchor, Button, Center, Stack, Text } from "@mantine/core";
 import GoogleIcon from "@/public/google-icon.svg";
 import GithubIcon from "@/public/github.svg";
-import { GetServerSidePropsContext } from "next";
-
-import jwt_decode from "jwt-decode";
-import { useSignupWithGoogle } from "@/api/auth";
+import { APP_TOKENS } from "@/utils/constants";
+import { useRouter } from "next/router";
 import { useEffect } from "react";
+import Link from "next/link";
 
 interface LoginProps {
-  code: string;
-  state: string;
-  medium: "google" | "github";
+  redirect: boolean;
+  githubAuthDetails: { to: string };
+  googleAuthDetails: { to: string };
+  token: string;
 }
-export default function Login({ code, state, medium }: LoginProps) {
-  // if(medium)
+export default function Login({
+  redirect,
+  googleAuthDetails,
+  githubAuthDetails,
+  token,
+}: LoginProps) {
+  // console.log({ redirect, googleAuthDetails, githubAuthDetails });
+  const router = useRouter();
 
-  const { mutateAsync: signupWithGoogle, isLoading: signupWithGoogleLoading } =
-    useSignupWithGoogle(state, code);
+  useEffect(
+    function () {
+      if (redirect) {
+        Cookies.set(APP_TOKENS.TOKEN, token);
+        router.push("/challenges");
+      }
+    },
+    [redirect, router, token]
+  );
 
-//   useEffect(function () {
-//     if (medium) {
-//       if (medium === "google") {
-//         signupWithGoogle().then((result) => console.log({ result }));
-//       } else if (medium === "github") {
-//         console.log({ code, state, medium });
-//       }
-//     }
-//   }, []);
-
-  function handleSignupWithGoogle() {
-    signupWithGoogle().then((result) => console.log({ result }));
-  }
   return (
     <AppLayout>
-      <Center style={{ height: "calc(100vh - 90px - 64px)" }}>
-        <Stack
-          p={24}
-          spacing="xl"
-          style={{
-            border: "1px solid #B8C0CC4D",
-            boxShadow: "0px 4px 8px 0px #1B20631A",
-            width: "min(100%, 400px)",
-            borderRadius: "8px",
-          }}
-          align="center"
-        >
-          <Text weight={600} size="xl">
-            Sign In
-          </Text>
-          <Stack spacing="md" style={{ width: "100%" }}>
-            <Button
-              size="lg"
-              variant="outline"
-              fullWidth
-              leftIcon={<GoogleIcon />}
-              onClick={handleSignupWithGoogle}
-              loading={signupWithGoogleLoading}
-            >
-              Login with Google
-            </Button>
-            <Button
-              size="lg"
-              variant="outline"
-              fullWidth
-              leftIcon={<GithubIcon />}
-            >
-              Login with Github
-            </Button>
-          </Stack>
+      <Container size="xl" pos="relative">
+        {/* <LoadingOverlay visible={redirect}> */}
+        <Center style={{ height: "calc(100vh - 90px - 64px)" }}>
+          <Stack
+            p={24}
+            spacing="xl"
+            style={{
+              border: "1px solid #B8C0CC4D",
+              boxShadow: "0px 4px 8px 0px #1B20631A",
+              width: "min(100%, 400px)",
+              borderRadius: "8px",
+            }}
+            align="center"
+          >
+            <Text weight={600} size="xl">
+              Sign In
+            </Text>
+            <Stack spacing="md" style={{ width: "100%" }}>
+              <Anchor href={googleAuthDetails.to}>
+                <Button
+                  size="lg"
+                  variant="outline"
+                  fullWidth
+                  leftIcon={<GoogleIcon />}
+                >
+                  Login with Google
+                </Button>
+              </Anchor>
+              <Anchor href={githubAuthDetails.to}>
+                <Button
+                  size="lg"
+                  variant="outline"
+                  fullWidth
+                  leftIcon={<GithubIcon />}
+                >
+                  Login with Github
+                </Button>
+              </Anchor>
+            </Stack>
 
-          <Anchor>I have an account</Anchor>
-        </Stack>
-      </Center>
+            <Link href="/sign-up">{`Don't have an account?`}</Link>
+          </Stack>
+        </Center>
+        {/* </LoadingOverlay> */}
+      </Container>
     </AppLayout>
   );
 }
 
 export async function getServerSideProps(ctx: GetServerSidePropsContext) {
-  const { code, state } = ctx.query;
+  const googleAuthDetails = await getGoogleAuthDetails();
+  const githubAuthDetails = await getGithubAuthDetails();
+  const { code, state } = ctx.query as Record<string, string>;
+
+  if (!state)
+    return {
+      props: {
+        redirect: false,
+        googleAuthDetails,
+        githubAuthDetails,
+      },
+    };
+
   const decodedState: { extra: string } = jwt_decode(state as string);
+  const { medium } = parseStringToObject(decodedState.extra);
+  let token = "",
+    token_type = "";
+  if (medium === "google") {
+    const googleResponse = await signInWithGoogle({
+      code: code,
+      state: state,
+    });
+    // const { token_type, token } = googleResponse;
+    token = googleResponse.token;
+
+    // console.log({ token, token_type });
+    // Cookies.set(APP_TOKENS.TOKEN_TYPE, token_type);
+    Cookies.set(APP_TOKENS.TOKEN, token);
+  } else if (medium === "github") {
+    const githubResponse = await signInWithGithub({
+      code: code,
+      state: state,
+    });
+    token = githubResponse.token;
+    // const { token_type, token } = githubResponse;
+    // Cookies.set(APP_TOKENS.TOKEN_TYPE, token_type);
+    // Cookies.set(APP_TOKENS.TOKEN, token);
+  }
+
+  // console.log({
+  //   code: code,
+  //   state: state,
+  //   extra: parseStringToObject(decodedState.extra),
+  // });
 
   return {
     props: {
-      code: code || null,
-      state: state || null,
-      medium: decodedState?.extra || null,
+      redirect: true,
+      googleAuthDetails,
+      githubAuthDetails,
+      token,
     },
   };
 }

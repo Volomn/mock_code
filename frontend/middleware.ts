@@ -3,7 +3,7 @@ import { APP_TOKENS } from "./utils/constants";
 
 export function middleware(request: NextRequest) {
   //   let cookie = request.cookies.get("nextjs")?.value;
-  const apiClientPaths = ["/dashboard", "/competition"];
+  const paths = ["/dashboard", "/competition"];
 
   const publicPaths = ["/", "/login", "/signup"];
 
