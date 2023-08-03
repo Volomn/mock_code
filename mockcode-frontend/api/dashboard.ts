@@ -26,7 +26,7 @@ export function useGetCompetion(id: string) {
 export function useSubmitSolution() {
   return useMutation({
     mutationFn: (solutions: FormData) =>
-      axiosInstance.post("/submissions", solutions, {
+      axiosInstance.post("/submissions/", solutions, {
         headers: {
           Authorization: `Bearer ${Cookies.get(APP_TOKENS.TOKEN)}`,
         },
