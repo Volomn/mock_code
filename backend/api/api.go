@@ -25,7 +25,17 @@ func GetApiRouter(app *app.Application) chi.Router {
 	// router.Use(middleware.Recoverer)
 	router.Use(middleware.URLFormat)
 	router.Use(render.SetContentType(render.ContentTypeJSON))
-	router.Use(cors.Handler(cors.Options{AllowedOrigins: []string{"*"}, AllowedMethods: []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"}}))
+	router.Use(cors.Handler(cors.Options{
+		AllowedOrigins: []string{"*"},
+		AllowedMethods: []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowedHeaders: []string{"*"},
+		Debug:          true,
+
+		// AllowCredentials indicates whether the request can include user credentials like
+		// cookies, HTTP authentication or client side SSL certificates.
+		// AllowCredentials bool
+
+	}))
 
 	router.Use(mymiddleware.ApplicationMiddleware(app))
 	router.Use(jwtauth.Verifier(tokenAuth))
