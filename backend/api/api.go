@@ -22,19 +22,10 @@ func GetApiRouter(app *app.Application) chi.Router {
 
 	router.Use(middleware.RequestID)
 	router.Use(middleware.Logger)
-	router.Use(middleware.Recoverer)
+	// router.Use(middleware.Recoverer)
 	router.Use(middleware.URLFormat)
 	router.Use(render.SetContentType(render.ContentTypeJSON))
-	router.Use(cors.Handler(cors.Options{
-		// AllowedOrigins:   []string{"https://foo.com"}, // Use this to allow specific origin hosts
-		AllowedOrigins: []string{"*"},
-		// AllowOriginFunc:  func(r *http.Request, origin string) bool { return true },
-		// AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
-		// AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token"},
-		// ExposedHeaders:   []string{"Link"},
-		// AllowCredentials: false,
-		// MaxAge:           300, // Maximum value not ignored by any of major browsers
-	}))
+	router.Use(cors.Handler(cors.Options{AllowedOrigins: []string{"*"}}))
 
 	router.Use(mymiddleware.ApplicationMiddleware(app))
 	router.Use(jwtauth.Verifier(tokenAuth))
