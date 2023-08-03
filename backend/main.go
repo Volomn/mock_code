@@ -10,6 +10,7 @@ import (
 	"github.com/Volomn/mock_code/backend/app"
 	"github.com/Volomn/mock_code/backend/infra"
 	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/cors"
 	"github.com/spf13/viper"
 	"github.com/urfave/cli"
 	"golang.org/x/exp/slog"
@@ -46,6 +47,7 @@ func main() {
 
 	// add datbase middleware
 	mainRouter.Use(DatabaseMiddleware(db))
+	mainRouter.Use(cors.Handler(cors.Options{AllowedOrigins: []string{"*"}}))
 
 	// mount api router on path /api
 	mainRouter.Mount("/api", apiRouter)

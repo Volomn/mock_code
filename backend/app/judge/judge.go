@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"io"
 	"reflect"
-
-	"golang.org/x/exp/slog"
 )
 
 type JudgeMethoNotDefinedError struct {
@@ -29,11 +27,12 @@ func (judge *Judge) Call(JudgeName string, inputFile io.Reader, outputFile io.Re
 		errorMessage := fmt.Sprintf("Judge method %s not defined", JudgeName)
 		return 0, NewJudgeMethodNotDefinedError(errorMessage)
 	}
-	// in := make([]reflect.Value, 2)
 	in := []reflect.Value{reflect.ValueOf(inputFile), reflect.ValueOf(outputFile)}
 	res := JudgeMethod.Call(in)
-	slog.Info("response from judge call", "response", res)
 	score := res[0].Interface().(float32)
-	err := res[1].Interface().(error)
-	return score, err
+	err := res[1].Interface()
+	if err == nil {
+		return score, nil
+	}
+	return score, err.(error)
 }
