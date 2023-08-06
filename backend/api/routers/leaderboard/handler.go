@@ -16,6 +16,7 @@ type LeaderboardItem struct {
 	Email           string
 	FirstName       string
 	LastName        string
+	SubmittedAt     string
 }
 
 type LeaderboardItemResponse struct {
@@ -25,6 +26,7 @@ type LeaderboardItemResponse struct {
 	Email           string  `json:"email"`
 	FirstName       string  `json:"firstName"`
 	LastName        string  `json:"lastName"`
+	SubmittedAt     string  `json:"submittedAt"`
 }
 
 func (rd *LeaderboardItemResponse) Render(w http.ResponseWriter, r *http.Request) error {
@@ -39,6 +41,7 @@ func NewLeaderboardItemResponse(item *LeaderboardItem) *LeaderboardItemResponse 
 		Email:           item.Email,
 		FirstName:       item.FirstName,
 		LastName:        item.LastName,
+		SubmittedAt:     item.SubmittedAt,
 	}
 }
 
@@ -62,13 +65,37 @@ func GetLeaderboard(w http.ResponseWriter, r *http.Request) {
 	var results []*LeaderboardItem
 
 	db := r.Context().Value("db").(*gorm.DB)
-	db.Table("submissions").
-		Select("submissions.id, submissions.user_id, SUM(solutions.score) as submission_score, users.email, users.first_name, users.last_name").
-		Joins("JOIN users ON submissions.user_id = users.id").
-		Joins("JOIN solutions ON submissions.id = solutions.submission_id").
+
+	db.Table("users").
+		Select(`
+		DISTINCT ON (user_id)
+		users.email,
+		users.first_name,
+		users.last_name,
+		users_submissions.user_id,
+		users_submissions.submission_id as id, 
+		users_submissions.submitted_at, 
+		users_submissions.highest_score as submission_score,
+		users_submissions.challenge_id as challenge_id
+	`).
+		Joins(`
+		JOIN(
+			SELECT
+				submissions.id as submission_id, 
+				submissions.user_id, 
+				submissions.challenge_id,
+				solution_scores.score_sum as highest_score, 
+				submissions.created_at as submitted_at 
+			FROM submissions
+			JOIN (
+				SELECT solutions.submission_id, SUM(solutions.score) as score_sum
+				FROM solutions
+				GROUP BY solutions.submission_id
+			) as solution_scores ON submissions.id = solution_scores.submission_id
+			order by highest_score desc, submitted_at asc 
+		) as users_submissions on users.id = users_submissions.user_id
+	`).
 		Where("challenge_id = ?", challengeId).
-		Group("submissions.id, submissions.user_id, users.email, users.first_name, users.last_name").
-		Order("submission_score DESC").
 		Scan(&results)
 
 	render.Status(r, 200)
