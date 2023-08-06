@@ -10,47 +10,46 @@ import {
   Group,
   Skeleton,
   Stack,
+  Table,
   Tabs,
   Text,
 } from "@mantine/core";
 import Image from "next/image";
-
 import Competition1 from "@/public/competition1.png";
 import { GetServerSidePropsContext } from "next";
-import { useGetCompetion, useSubmitSolution } from "@/api/dashboard";
+import {
+  useGetCompetion,
+  useGetSolutions,
+  useSubmitSolution,
+} from "@/api/dashboard";
 import { useState } from "react";
+import { DocumentText } from "iconsax-react";
 import DownloadIcon from "@/public/download-icon.svg";
 import UploadIcon from "@/public/upload-icon.svg";
-import { APP_TOKENS } from "@/utils/constants";
-import Cookies from "js-cookie";
+import { formatDate, formatTime } from "@/utils/date-formatter";
+import { SubmitDrawer } from "@/components/submit-drawer";
+import { SubmissionsDrawer } from "@/components/submission-drawer";
+import { Solutions } from "@/utils/interfaces";
+import { Leaderboard } from "@/layouts/competition/leaderboard";
 export default function Dashboard({ challengeId }: { challengeId: string }) {
   const { isLoading, data } = useGetCompetion(challengeId);
+  const { isLoading: solutionsLoading, data: solutions } =
+    useGetSolutions(challengeId);
   const [drawerIsOpen, setDrawerIsOpen] = useState(false);
-  const { mutate: submitSolution, isLoading: submitSolutionLoading } =
-    useSubmitSolution();
-  const [files, setFiles] = useState<File[]>([]);
-  function openSubmissionDrawer() {
-    setDrawerIsOpen(true);
+  const [submissionsDrawerOpen, setSubmissionsDrawerOpen] = useState(false);
+  const [currentSolution, setCurrentSolution] = useState<null | Solutions>(
+    null
+  );
+
+  function openSubmissionDetails(solution: Solutions) {
+    setSubmissionsDrawerOpen(true);
+    setCurrentSolution(solution);
   }
 
-  function addFile(index: number, file: File) {
-    const currentFiles = [...files];
-    currentFiles[index] = file;
-    setFiles(currentFiles);
-  }
-
-  function handleFileSubmit() {
-    const formData = new FormData();
-    files.forEach((file) => formData.append("input", file));
-    console.log({ token: Cookies.get(APP_TOKENS.TOKEN) });
-    // console.log(Cookies.get(APP_TOKENS.TOKEN_TYPE))
-
-    submitSolution(formData);
-  }
   return (
     <AppLayout>
       <Container size="xl" py={64}>
-        {isLoading ? (
+        {isLoading || solutionsLoading ? (
           <LoadingSkeleton />
         ) : (
           <>
@@ -71,7 +70,11 @@ export default function Dashboard({ challengeId }: { challengeId: string }) {
                   <Tabs.Tab value="submissions">Submissions</Tabs.Tab>
                   <Tabs.Tab value="leaderboard">Leaderboard</Tabs.Tab>
 
-                  <Button ml="auto" size="md" onClick={openSubmissionDrawer}>
+                  <Button
+                    ml="auto"
+                    size="md"
+                    onClick={() => setDrawerIsOpen(true)}
+                  >
                     Submit answer
                   </Button>
                 </Tabs.List>
@@ -122,88 +125,78 @@ export default function Dashboard({ challengeId }: { challengeId: string }) {
                     </Stack>
                   </Container>
                 </Tabs.Panel>
+                <Tabs.Panel value="submissions">
+                  <Container size="lg" py={64}>
+                    <Text
+                      style={{}}
+                      weight={600}
+                      size={24}
+                      className="font-secondary"
+                    >
+                      Solutions
+                    </Text>
+
+                    <Text component="p" mt={20} className="font-primary">
+                      Here is a record of all the submissions you have made for
+                      this competition.
+                    </Text>
+
+                    <Table
+                      withBorder
+                      horizontalSpacing="lg"
+                      verticalSpacing="lg"
+                      highlightOnHover
+                    >
+                      <thead>
+                        <tr>
+                          <th>#</th>
+                          <th>Submission ID</th>
+                          <th>Date</th>
+                          <th>Time</th>
+                          <th>Score</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {solutions?.data.map((solution) => (
+                          <tr key={solution.id}>
+                            <td>{solution.id}</td>
+                            <td>{solution.id}</td>
+                            <td>{formatDate(solution.createdAt)}</td>
+                            <td>{formatTime(solution.createdAt)}</td>
+                            <td>{solution.totalScore}</td>
+                            <td>
+                              <Button
+                                size="xs"
+                                variant="white"
+                                onClick={() => openSubmissionDetails(solution)}
+                              >
+                                View submissions
+                              </Button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </Table>
+                  </Container>
+                </Tabs.Panel>
+                <Tabs.Panel value="leaderboard">
+                  <Leaderboard/>
+                </Tabs.Panel>
               </Tabs>
             </Box>
           </>
         )}
       </Container>
-
-      <Drawer
+      <SubmitDrawer
+        close={() => setDrawerIsOpen(false)}
         opened={drawerIsOpen}
-        onClose={() => {
-          setDrawerIsOpen(false);
-          setFiles([]);
-        }}
-        title={
-          <Text weight={600} size={20} className="font-secondary">
-            Submit File
-          </Text>
-        }
-        position="right"
-      >
-        <Group>
-          <Box h={50} w={50} pos="relative">
-            <Image
-              src={Competition1}
-              style={{ objectPosition: "center", objectFit: "cover" }}
-              fill
-              alt=""
-            />
-          </Box>
-          <Stack spacing={0}>
-            <Text className="font-secondary">{data?.data.name}</Text>
-            <Text className="font-primary">
-              Upload solution for each input file
-            </Text>
-          </Stack>
-        </Group>
-
-        <Stack my={24}>
-          {data?.data.inputFiles.map((file: string, idx) => (
-            <SolutionUpload key={idx} idx={idx} addFile={addFile} />
-          ))}
-        </Stack>
-
-        <Button
-          size="lg"
-          disabled={!data?.data || files.length < data?.data.inputFiles.length}
-          fullWidth
-          loading={submitSolutionLoading}
-          onClick={handleFileSubmit}
-        >
-          Submit
-        </Button>
-      </Drawer>
+      />
+      <SubmissionsDrawer
+        close={() => setSubmissionsDrawerOpen(false)}
+        opened={submissionsDrawerOpen}
+        currentSolution={currentSolution}
+      />
     </AppLayout>
-  );
-}
-
-function SolutionUpload({
-  idx,
-  addFile,
-}: {
-  idx: number;
-  addFile: (arg0: number, arg1: File) => void;
-}) {
-  const [file, setFile] = useState<File | null>(null);
-  const initialFilename = `Input file ${idx + 1}`;
-
-  function handleFileSelect(file: File) {
-    addFile(idx, file);
-    setFile(file);
-  }
-  return (
-    <Group position="apart">
-      <Text className="font-primary">{file?.name ?? initialFilename}</Text>
-
-      <FileButton onChange={handleFileSelect} accept="image/png,image/jpeg">
-        {(props) => (
-          <ActionIcon {...props}>
-            <UploadIcon />
-          </ActionIcon>
-        )}
-      </FileButton>
-    </Group>
   );
 }
 

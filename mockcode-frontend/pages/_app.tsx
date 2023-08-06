@@ -10,6 +10,7 @@ import { useState } from "react";
 import { montserrat, sora } from "@/utils/fonts";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
+import { Notifications } from "@mantine/notifications";
 
 export default function App(props: AppProps) {
   const [colorScheme, setColorScheme] = useState<ColorScheme>("light");
@@ -60,6 +61,7 @@ export default function App(props: AppProps) {
               primaryColor: "brand",
             }}
           >
+            <Notifications position="top-right" />
             <div
               className={`${sora.variable} ${montserrat.variable} ${montserrat.className}`}
             >

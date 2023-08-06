@@ -127,7 +127,7 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
     });
     // const { token_type, token } = googleResponse;
     token = googleResponse.token;
-
+    console.log(token);
     // console.log({ token, token_type });
     // Cookies.set(APP_TOKENS.TOKEN_TYPE, token_type);
     Cookies.set(APP_TOKENS.TOKEN, token);

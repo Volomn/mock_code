@@ -61,6 +61,9 @@ dependencies:
   eslint-config-next:
     specifier: 13.4.12
     version: 13.4.12(eslint@8.46.0)(typescript@5.1.6)
+  iconsax-react:
+    specifier: ^0.0.8
+    version: 0.0.8(react@18.2.0)
   js-cookie:
     specifier: ^3.0.5
     version: 3.0.5
@@ -3814,6 +3817,15 @@ packages:
   /human-signals@4.3.1:
     resolution: {integrity: sha512-nZXjEF2nbo7lIw3mgYjItAfgQXog3OjJogSbKa2CQIIvSGWcKgeJnQlNXip6NglNzYH45nSRiEVimMvYL8DDqQ==}
     engines: {node: '>=14.18.0'}
+    dev: false
+
+  /iconsax-react@0.0.8(react@18.2.0):
+    resolution: {integrity: sha512-l3dVk4zGtkkJHgvNYqAf0wDKqnKxXykee5/DoESGo2JvSYwaxajJUHSX2YrPRXSov8Hd8ClGFwJxCEaEjrFD1Q==}
+    peerDependencies:
+      react: '*'
+    dependencies:
+      prop-types: 15.8.1
+      react: 18.2.0
     dev: false
 
   /ignore@5.2.4:
