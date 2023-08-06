@@ -38,8 +38,8 @@ func NewSubmissionResponse(submission *domain.Submission) *SubmissionResponse {
 	for index, solution := range submission.Solutions {
 		totalScore += int(solution.Score)
 		solutions[index] = SolutionResponse{
-			InputFile:    solution.InputFile,
-			OutputFile:   solution.OutputFile,
+			InputFile:    solution.InputFileUrl,
+			OutputFile:   solution.OutputFileUrl,
 			Score:        solution.Score,
 			ErrorMessage: solution.ErrorMessage.Ptr(),
 		}
@@ -89,12 +89,6 @@ func SubmitSolution(w http.ResponseWriter, r *http.Request) {
 			render.Render(w, r, util.ErrorBadRequest(err, &errorMessage))
 			return
 		}
-		// slog.Info("output file content type", "ct", outputFileHandle.Header.Get("Content-Type"))
-		// if outputFileHandle.Header.Get("Content-Type") != "text/plain" {
-		// 	errorMessage := fmt.Sprintf("Invalid output file %s", outputFileHandle.Filename)
-		// 	render.Render(w, r, util.ErrorBadRequest(err, &errorMessage))
-		// 	return
-		// }
 		solutions[index] = app.Solution{
 			InputFileName:         inputFileNames[index],
 			OutputFile:            outputFile,

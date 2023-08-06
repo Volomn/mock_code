@@ -408,13 +408,27 @@ func (application *Application) SubmitSolution(userId uint, challengeId uint, so
 		uploader := s3manager.NewUploader(sess)
 
 		// Perform an upload.
-		result, err := uploader.Upload(&uploadParams)
+		uploadResult, err := uploader.Upload(&uploadParams)
 
 		if err != nil {
 			slog.Error("Output file upload failed", "error", err.Error(), "inputFile", solution.InputFileName, "outputfile", solution.OutputFileName)
-			sols[index] = domain.Solution{InputFile: solution.InputFileName, OutputFile: solution.OutputFileName, ErrorMessage: null.NewString("Invalid output file", true), Score: 0}
+			sols[index] = domain.Solution{InputFileUrl: solution.InputFileName, OutputFileUrl: solution.OutputFileName, ErrorMessage: null.NewString("Invalid output file", true), Score: 0}
 			continue
 		}
+
+		req, _ := svc.GetObjectRequest(&s3.GetObjectInput{
+			Bucket: aws.String(viper.GetString("AWS_S3_BUCKET")),
+			Key:    aws.String(fmt.Sprintf("%s/%s/%s/%s", "challenges", challenge.Name, "input", solution.InputFileName)),
+		})
+		urlStr, err := req.Presign(1 * time.Minute)
+
+		if err != nil {
+			slog.Error("Error getting input file", "error", err.Error())
+			sols[index] = domain.Solution{InputFileUrl: solution.InputFileName, OutputFileUrl: uploadResult.Location, ErrorMessage: null.NewString("Invalid input file", true), Score: 0}
+			continue
+		}
+
+		inputFileUrl := strings.Split(urlStr, "?")[0]
 
 		inputObject, err := svc.GetObject(&s3.GetObjectInput{
 			Bucket: aws.String(viper.GetString("AWS_S3_BUCKET")),
@@ -423,7 +437,7 @@ func (application *Application) SubmitSolution(userId uint, challengeId uint, so
 
 		if err != nil {
 			slog.Error("Error getting input file", "error", err.Error())
-			sols[index] = domain.Solution{InputFile: solution.InputFileName, OutputFile: solution.OutputFileName, ErrorMessage: null.NewString("Invalid input file", true), Score: 0}
+			sols[index] = domain.Solution{InputFileUrl: inputFileUrl, OutputFileUrl: uploadResult.Location, ErrorMessage: null.NewString("Invalid input file", true), Score: 0}
 			continue
 		}
 
@@ -435,20 +449,20 @@ func (application *Application) SubmitSolution(userId uint, challengeId uint, so
 
 		if err != nil {
 			slog.Error("Error getting input file", "error", err.Error())
-			sols[index] = domain.Solution{InputFile: solution.InputFileName, OutputFile: solution.OutputFileName, ErrorMessage: null.NewString(err.Error(), true), Score: score}
+			sols[index] = domain.Solution{InputFileUrl: inputFileUrl, OutputFileUrl: uploadResult.Location, ErrorMessage: null.NewString(err.Error(), true), Score: score}
 			continue
 		}
 
-		sols[index] = domain.Solution{InputFile: solution.InputFileName, OutputFile: solution.OutputFileName, ErrorMessage: null.NewString("", false), Score: score}
+		sols[index] = domain.Solution{InputFileUrl: inputFileUrl, OutputFileUrl: uploadResult.Location, ErrorMessage: null.NewString("", false), Score: score}
 
 		_, err = solution.OutputFile.Read(outputFileContent)
 		if err != nil {
 			slog.Error("Error reading output file", "error", err.Error())
-			sols[index] = domain.Solution{InputFile: solution.InputFileName, OutputFile: solution.OutputFileName, ErrorMessage: null.NewString("Error reading output file", true), Score: score}
+			sols[index] = domain.Solution{InputFileUrl: inputFileUrl, OutputFileUrl: uploadResult.Location, ErrorMessage: null.NewString("Error reading output file", true), Score: score}
 			continue
 		}
 
-		slog.Info("Output file uploaded successfully", "location", result.Location)
+		slog.Info("Output file uploaded successfully", "location", uploadResult.Location)
 	}
 	submission := &domain.Submission{
 		Solutions:   sols,
