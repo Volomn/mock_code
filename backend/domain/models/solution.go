@@ -8,13 +8,13 @@ import (
 )
 
 type Solution struct {
-	ID           uint `gorm:"primaryKey"`
-	CreatedAt    time.Time
-	UpdatedAt    time.Time
-	DeletedAt    gorm.DeletedAt `gorm:"index"`
-	SubmissionId uint
-	InputFile    string
-	OutputFile   string
-	Score        float32
-	ErrorMessage null.String
+	ID            uint `gorm:"primaryKey"`
+	CreatedAt     time.Time
+	UpdatedAt     time.Time
+	DeletedAt     gorm.DeletedAt `gorm:"index"`
+	SubmissionId  uint
+	InputFileUrl  string
+	OutputFileUrl string
+	Score         float32
+	ErrorMessage  null.String
 }
