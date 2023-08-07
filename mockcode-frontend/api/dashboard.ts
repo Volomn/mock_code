@@ -5,6 +5,7 @@ import Cookies from "js-cookie";
 import { APP_TOKENS } from "@/utils/constants";
 import { showNotification } from "@mantine/notifications";
 import { Competition, LeaderboardEntry, Solutions } from "@/utils/interfaces";
+import { queryClient } from "@/pages/_app";
 
 export function useGetCompetions() {
   return useQuery({
@@ -69,6 +70,9 @@ export function useSubmitSolution(successCb: () => void) {
         message: "Unable to submit",
         color: "red",
       });
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries(["solutions"]);
     },
   });
 }

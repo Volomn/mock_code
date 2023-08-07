@@ -11,6 +11,9 @@ import {
   Container,
   Group,
   Text,
+  clsx,
+  useMantineColorScheme,
+  useMantineTheme,
 } from "@mantine/core";
 import { AppLayout } from "@/layouts/app-layout";
 import { sora } from "@/utils/fonts";
@@ -23,6 +26,8 @@ export default function Home({
   githubAuthDetails: { to: string };
   googleAuthDetails: { to: string };
 }) {
+  const { colorScheme } = useMantineColorScheme();
+  const dark = colorScheme === "dark";
   return (
     <AppLayout>
       <Center style={{ minHeight: "calc(100vh - 90px - 64px)" }}>
@@ -37,6 +42,7 @@ export default function Home({
             size={48}
             weight={600}
             style={{ lineHeight: "56px", fontFamily: "var(--font-sora)" }}
+            className={clsx(dark ? "text-white" : "text-[#1B2063]")}
           >
             Code like a hero, change the world like a legend.
           </Text>
@@ -44,8 +50,10 @@ export default function Home({
             py={16}
             size={18}
             weight={300}
-            className="font-secondary"
-            style={{ color: "#312A50" }}
+            className={clsx(
+              dark ? "text-white" : "text-[#312A50]",
+              "font-secondary"
+            )}
           >
             Lorem ipsum dolor sit amet consectetur. Turpis ipsum etiam id nisi
             tempus sed elementum at. Pellentesque morbi imperdiet egestas.
@@ -56,7 +64,12 @@ export default function Home({
                 size="lg"
                 variant="outline"
                 leftIcon={<GoogleIcon />}
-                className="font-primary"
+                className={clsx(
+                  dark
+                    ? "text-white border-white"
+                    : "text-[##1B2063] border-[#1B2063]",
+                  "font-secondary hover:bg-transparent"
+                )}
                 style={{ fontWeight: 400 }}
               >
                 Sign up with Google
@@ -67,7 +80,12 @@ export default function Home({
                 size="lg"
                 variant="outline"
                 leftIcon={<GithubIcon />}
-                className="font-primary"
+                className={clsx(
+                  dark
+                    ? "text-white border-white"
+                    : "text-[##1B2063] border-[#1B2063]",
+                  "font-secondary hover:bg-transparent"
+                )}
                 style={{ fontWeight: 400 }}
               >
                 Sign up with Github

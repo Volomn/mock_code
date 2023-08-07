@@ -26,6 +26,7 @@ export async function signInWithGoogle({
     `${baseURL}/auth/google?state=${state}&code=${code}`,
     { method: "post", body: null }
   );
+  console.log(res);
   if (!res.ok) throw new Error("Unable to sign in with Google");
 
   return res.json();

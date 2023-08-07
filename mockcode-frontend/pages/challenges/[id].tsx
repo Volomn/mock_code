@@ -1,12 +1,9 @@
 import { AppLayout } from "@/layouts/app-layout";
 import {
-  ActionIcon,
   Anchor,
   Box,
   Button,
   Container,
-  Drawer,
-  FileButton,
   Group,
   Skeleton,
   Stack,
@@ -17,24 +14,23 @@ import {
 import Image from "next/image";
 import Competition1 from "@/public/competition1.png";
 import { GetServerSidePropsContext } from "next";
-import {
-  useGetCompetion,
-  useGetSolutions,
-  useSubmitSolution,
-} from "@/api/dashboard";
+import { useGetCompetion, useGetSolutions } from "@/api/dashboard";
 import { useState } from "react";
-import { DocumentText } from "iconsax-react";
+import { useRouter } from "next/router";
 import DownloadIcon from "@/public/download-icon.svg";
-import UploadIcon from "@/public/upload-icon.svg";
 import { formatDate, formatTime } from "@/utils/date-formatter";
 import { SubmitDrawer } from "@/components/submit-drawer";
 import { SubmissionsDrawer } from "@/components/submission-drawer";
 import { Solutions } from "@/utils/interfaces";
 import { Leaderboard } from "@/layouts/competition/leaderboard";
+import { useAuthStatus } from "@/hooks/auth";
+
 export default function Dashboard({ challengeId }: { challengeId: string }) {
+  const router = useRouter();
   const { isLoading, data } = useGetCompetion(challengeId);
   const { isLoading: solutionsLoading, data: solutions } =
     useGetSolutions(challengeId);
+  const stuff = useAuthStatus()
   const [drawerIsOpen, setDrawerIsOpen] = useState(false);
   const [submissionsDrawerOpen, setSubmissionsDrawerOpen] = useState(false);
   const [currentSolution, setCurrentSolution] = useState<null | Solutions>(
@@ -59,11 +55,18 @@ export default function Dashboard({ challengeId }: { challengeId: string }) {
                 style={{ objectFit: "cover", objectPosition: "center" }}
                 fill
                 alt=""
+                priority
               />
             </Box>
 
             <Box my={8}>
-              <Tabs defaultValue="description">
+              <Tabs
+                value={router.query.tab as string}
+                onTabChange={(value) =>
+                  router.push(`/challenges/${challengeId}/?tab=${value}`)
+                }
+                defaultValue="description"
+              >
                 <Tabs.List>
                   <Tabs.Tab value="description">Description</Tabs.Tab>
                   <Tabs.Tab value="input-files">Input files</Tabs.Tab>
@@ -180,7 +183,7 @@ export default function Dashboard({ challengeId }: { challengeId: string }) {
                   </Container>
                 </Tabs.Panel>
                 <Tabs.Panel value="leaderboard">
-                  <Leaderboard/>
+                  <Leaderboard />
                 </Tabs.Panel>
               </Tabs>
             </Box>
@@ -195,6 +198,10 @@ export default function Dashboard({ challengeId }: { challengeId: string }) {
         close={() => setSubmissionsDrawerOpen(false)}
         opened={submissionsDrawerOpen}
         currentSolution={currentSolution}
+        openSubmitDrawer={() => {
+          setSubmissionsDrawerOpen(false);
+          setDrawerIsOpen(true);
+        }}
       />
     </AppLayout>
   );

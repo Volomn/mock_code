@@ -2,18 +2,18 @@ import { AppLayout } from "@/layouts/app-layout";
 import {
   Box,
   Container,
-  Grid,
   Group,
+  Paper,
   Skeleton,
   Stack,
   Text,
-  TextInput,
 } from "@mantine/core";
 import Image from "next/image";
 
 import Competition1 from "@/public/competition1.png";
-import { useGetCompetions } from "@/api/dashboard"; 
+import { useGetCompetions } from "@/api/dashboard";
 import { useRouter } from "next/router";
+import { Competition } from "@/utils/interfaces";
 
 export default function Dashboard() {
   return (
@@ -34,21 +34,23 @@ export default function Dashboard() {
           </article>
         </Stack>
 
-        <Box mt={60}>
+        {/* <Box mt={60}>
           <TextInput
             placeholder="Search for competitions"
             style={{ width: "100%" }}
             size="lg"
           />
-        </Box>
-
-        <Competitions />
+        </Box> */}
+        <Stack spacing={32}>
+          <Competitions active />
+          <Competitions />
+        </Stack>
       </Container>
     </AppLayout>
   );
 }
 
-function Competitions() {
+function Competitions({ active }: { active?: boolean }) {
   const { isLoading, data } = useGetCompetions();
   if (isLoading) {
     return (
@@ -64,7 +66,7 @@ function Competitions() {
   }
 
   return (
-    <>
+    <Box>
       <Box>
         <h3
           style={{
@@ -72,7 +74,7 @@ function Competitions() {
             fontWeight: 600,
           }}
         >
-          Competitions
+          {active ? "Active Competitions" : "All Competitions"}
         </h3>
       </Box>
       <Container fluid>
@@ -96,7 +98,7 @@ function Competitions() {
           ))}
         </Box>
       </Container>
-    </>
+    </Box>
   );
 }
 
@@ -104,7 +106,7 @@ function Competition({ competition }: { competition: Competition }) {
   const router = useRouter();
 
   return (
-    <Box
+    <Paper
       style={{
         boxShadow: "0px 4px 8px 0px rgba(27, 32, 99, 0.1)",
         cursor: "pointer",
@@ -135,6 +137,6 @@ function Competition({ competition }: { competition: Competition }) {
           {competition.problemStatement}
         </Text>
       </Stack>
-    </Box>
+    </Paper>
   );
 }
