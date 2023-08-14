@@ -27,9 +27,9 @@ func (a *AuthenticateAdminRequest) Bind(r *http.Request) error {
 	return nil
 }
 
-func getAccessToken(user domain.User) (string, error) {
+func getAccessToken(user domain.User, authMethod string) (string, error) {
 	tokenAuth := jwtauth.New("HS256", []byte(viper.GetString("AUTH_SECRET_KEY")), nil)
-	_, tokenString, err := tokenAuth.Encode(map[string]interface{}{"isAdmin": false, "authId": user.ID, "exp": time.Now().UTC().Add(24 * time.Hour)})
+	_, tokenString, err := tokenAuth.Encode(map[string]interface{}{"isAdmin": false, "authId": user.ID, "exp": time.Now().UTC().Add(24 * time.Hour), "authMethod": authMethod})
 	return tokenString, err
 
 }
@@ -108,7 +108,7 @@ func SignUpOrLoginWithGoogle(w http.ResponseWriter, r *http.Request) {
 		render.JSON(w, r, map[string]string{"msg": "Unauthorized"})
 		return
 	}
-	accessToken, accessTokenError := getAccessToken(user)
+	accessToken, accessTokenError := getAccessToken(user, "google")
 	if accessTokenError != nil {
 		render.Status(r, 401)
 		render.JSON(w, r, map[string]string{"msg": "Unauthorized"})
@@ -187,7 +187,7 @@ func SignUpOrLoginWithGithub(w http.ResponseWriter, r *http.Request) {
 		render.JSON(w, r, map[string]string{"msg": "Unauthorized"})
 		return
 	}
-	accessToken, accessTokenError := getAccessToken(user)
+	accessToken, accessTokenError := getAccessToken(user, "github")
 	if accessTokenError != nil {
 		render.Status(r, 401)
 		render.JSON(w, r, map[string]string{"msg": "Unauthorized"})
