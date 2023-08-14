@@ -253,22 +253,60 @@ func (application *Application) CreateAdmin(firstName string, lastName string, e
 	return admin, nil
 }
 
-func (application *Application) AddChallenge(adminId uint, name string, problemStatement string, judge string) (domain.Challenge, error) {
+func (application *Application) AddChallenge(adminId uint, name string, shortDescription string, problemStatementFile io.Reader, problemStatementFilename string, problemStatementContentType string, judge string) (domain.Challenge, error) {
+	// get admin user
 	admin := application.AdminRepo.GetById(adminId)
 	if admin == nil {
 		return domain.Challenge{}, errors.New("Admin not found")
 	}
 
+	// ensure challenge with the same name does not exist
 	existingChallenge := application.ChallengeRepo.GetByName(name)
 	if existingChallenge != nil {
 		return domain.Challenge{}, errors.New("Challenge already exists")
 	}
+
+	// create new aws session
+	sess, err := session.NewSessionWithOptions(session.Options{
+		Profile: "default",
+		Config: aws.Config{
+			Region:      aws.String(viper.GetString(("AWS_REGION"))),
+			Credentials: credentials.NewStaticCredentials(viper.GetString("AWS_ACCESS_KEY_ID"), viper.GetString("AWS_SECRET_ACCESS_KEY"), ""),
+		},
+	})
+
+	if err != nil {
+		slog.Error("Failed to initialize new aws session", "error", err)
+		return domain.Challenge{}, errors.New(err.Error())
+	}
+
+	// define problem statement upload params
+	uploadParams := s3manager.UploadInput{
+		ACL:    aws.String("public-read"),
+		Bucket: aws.String(viper.GetString("AWS_S3_BUCKET")),
+		Body:   problemStatementFile,
+		Key:    aws.String(fmt.Sprintf("%s/%s/%s", "challenges", name, problemStatementFilename)),
+		// ContentDisposition: aws.String("attachment"),
+		ContentType: aws.String(problemStatementContentType),
+	}
+
+	uploader := s3manager.NewUploader(sess)
+
+	// Perform an upload.
+	result, err := uploader.Upload(&uploadParams)
+
+	if err != nil {
+		slog.Error("Problem statement file upload failed", "error", err.Error())
+		return domain.Challenge{}, err
+	}
+
 	challenge := domain.Challenge{
-		Name:             name,
-		ProblemStatement: problemStatement,
-		Judge:            judge,
-		OpenedAt:         null.NewTime(time.Time{}, false),
-		InputFiles:       datatypes.NewJSONSlice([]string{}),
+		Name:                name,
+		ShortDescription:    shortDescription,
+		ProblemStatementUrl: result.Location,
+		Judge:               judge,
+		OpenedAt:            null.NewTime(time.Time{}, false),
+		InputFiles:          datatypes.NewJSONSlice([]string{}),
 	}
 	application.ChallengeRepo.SaveChallenge(&challenge)
 	return challenge, nil
@@ -358,6 +396,7 @@ type Solution struct {
 }
 
 func (application *Application) SubmitSolution(userId uint, challengeId uint, solutions []Solution) (domain.Submission, error) {
+
 	user := application.UserRepo.GetById(userId)
 	if user == nil {
 		return domain.Submission{}, errors.New("User not found")

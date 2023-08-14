@@ -2,7 +2,6 @@ package challenge
 
 import (
 	"errors"
-	"fmt"
 	"net/http"
 	"strconv"
 	"time"
@@ -15,47 +14,18 @@ import (
 	"golang.org/x/exp/slog"
 )
 
-type AddChallengeRequest struct {
-	Name             string `json:"name"`
-	ProblemStatement string `json:"problemStatement"`
-	Judge            string `json:"judge"`
-}
-
-func (a *AddChallengeRequest) Bind(r *http.Request) error {
-	return nil
-}
-
-type ChallengeItemResponse struct {
-	ID        uint      `json:"id"`
-	CreatedAt time.Time `json:"createdAt"`
-	IsOpened  bool      `json:"isOpened"`
-	Name      string    `json:"name"`
-}
-
-func (rd *ChallengeItemResponse) Render(w http.ResponseWriter, r *http.Request) error {
-	return nil
-}
-
 type ChallengeResponse struct {
-	ID               uint      `json:"id"`
-	CreatedAt        time.Time `json:"createdAt"`
-	IsOpened         bool      `json:"isOpened"`
-	Name             string    `json:"name"`
-	ProblemStatement string    `json:"problemStatement"`
-	InputFiles       []string  `json:"inputFiles"`
+	ID                  uint      `json:"id"`
+	CreatedAt           time.Time `json:"createdAt"`
+	IsOpened            bool      `json:"isOpened"`
+	Name                string    `json:"name"`
+	ProblemStatementUrl string    `json:"problemStatementUrl"`
+	ShortDescription    string    `json:"shortDescription"`
+	InputFiles          []string  `json:"inputFiles"`
 }
 
 func (rd *ChallengeResponse) Render(w http.ResponseWriter, r *http.Request) error {
 	return nil
-}
-
-func NewChallengeItemResponse(challenge *domain.Challenge) *ChallengeItemResponse {
-	return &ChallengeItemResponse{
-		ID:        challenge.ID,
-		CreatedAt: challenge.CreatedAt,
-		IsOpened:  challenge.OpenedAt.Valid,
-		Name:      challenge.Name,
-	}
 }
 
 func NewChallengeListResponse(challenges []*domain.Challenge) []render.Renderer {
@@ -68,33 +38,57 @@ func NewChallengeListResponse(challenges []*domain.Challenge) []render.Renderer 
 
 func NewChallengeResponse(challenge *domain.Challenge) *ChallengeResponse {
 	return &ChallengeResponse{
-		ID:               challenge.ID,
-		CreatedAt:        challenge.CreatedAt,
-		IsOpened:         challenge.OpenedAt.Valid,
-		Name:             challenge.Name,
-		ProblemStatement: challenge.ProblemStatement,
-		InputFiles:       challenge.InputFiles,
+		ID:                  challenge.ID,
+		CreatedAt:           challenge.CreatedAt,
+		IsOpened:            challenge.OpenedAt.Valid,
+		Name:                challenge.Name,
+		ShortDescription:    challenge.ShortDescription,
+		ProblemStatementUrl: challenge.ProblemStatementUrl,
+		InputFiles:          challenge.InputFiles,
 	}
 }
 
 func AddChallenge(w http.ResponseWriter, r *http.Request) {
-	data := &AddChallengeRequest{}
-	if err := render.Bind(r, data); err != nil {
-		slog.Info("binding input data failed", "error", err.Error())
-		render.Status(r, 422)
-		render.JSON(w, r, map[string]string{"msg": fmt.Sprintf("Invalid request payload, %s", err.Error())})
+	// limit file size to 25Mb
+	err := r.ParseMultipartForm(25 << 20)
+	if err != nil {
+		slog.Error("Error parsing multipart form when submitting solution", "error", err.Error())
+		render.Render(w, r, util.ErrorBadRequest(err, nil))
 		return
 	}
 
+	// Get handler for filename, size and headers
+	file, handler, err := r.FormFile("problemStatement")
+	if err != nil {
+		slog.Error("Error receiving file", "error", err.Error())
+		render.Render(w, r, util.ErrorBadRequest(err, nil))
+		return
+	}
+
+	// Ensure file is pdf
+	contentType := handler.Header.Get("Content-Type")
+	if contentType != "application/pdf" {
+		errorMessage := "Invalid file format"
+		render.Render(w, r, util.ErrorBadRequest(errors.New(errorMessage), &errorMessage))
+		return
+	}
+
+	challangeName := r.FormValue("name")
+	shortDescription := r.FormValue("shortDescription")
+	judge := r.FormValue("judge")
+
 	authAdmin := r.Context().Value("authAdmin").(*domain.Admin)
 	application := r.Context().Value("app").(*app.Application)
-	_, err := application.AddChallenge(authAdmin.ID, data.Name, data.ProblemStatement, data.Judge)
+
+	// add challenge
+	_, err = application.AddChallenge(authAdmin.ID, challangeName, shortDescription, file, handler.Filename, contentType, judge)
 	if err != nil {
 		slog.Error("Error adding challenge", "error", err.Error())
 		render.Status(r, 400)
 		render.JSON(w, r, map[string]string{"msg": err.Error()})
 		return
 	}
+
 	render.Status(r, http.StatusCreated)
 	render.JSON(w, r, map[string]string{"msg": "Challenge added successfully"})
 
