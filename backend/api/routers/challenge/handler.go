@@ -129,6 +129,7 @@ func UploadInputFile(w http.ResponseWriter, r *http.Request) {
 		render.Render(w, r, util.ErrorNotFound(errors.New(msg), &msg))
 		return
 	}
+
 	slog.Info("File content headers", "header", handler.Header)
 	authAdmin := r.Context().Value("authAdmin").(*domain.Admin)
 	contentType := handler.Header.Get("Content-Type")
@@ -137,6 +138,7 @@ func UploadInputFile(w http.ResponseWriter, r *http.Request) {
 		render.Render(w, r, util.ErrorBadRequest(errors.New(errorMessage), &errorMessage))
 		return
 	}
+
 	*challenge, err = application.AddChallengeInputFile(authAdmin.ID, challenge.ID, file, handler.Filename, handler.Header.Get("Content-Type"))
 	if err != nil {
 		slog.Error("Error uploading challenge input file", "error", err.Error())
