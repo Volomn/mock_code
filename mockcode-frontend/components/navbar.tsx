@@ -1,12 +1,15 @@
 import Link from "next/link";
 import { useState } from "react";
 import {
+  Anchor,
+  Avatar,
   Burger,
   Button,
   Container,
   Flex,
   Group,
   MediaQuery,
+  Menu,
   Paper,
   Stack,
   Text,
@@ -15,9 +18,12 @@ import {
   rem,
   useMantineColorScheme,
 } from "@mantine/core";
-import { useClickOutside } from "@mantine/hooks";
-import DarkModeToggle from "./dark-mode-toggle";
 import { useAuthStatus, useLogout } from "@/hooks/auth";
+
+import DarkModeToggle from "./dark-mode-toggle";
+import UserIcon from "@/public/user-icon.svg";
+import GoogleIcon from "@/public/google-icon.svg";
+import GithubIcon from "@/public/github.svg";
 
 const scaleY = {
   in: { opacity: 1, transform: "scaleY(1)" },
@@ -54,7 +60,7 @@ export function Navbar() {
             <Group>
               <DarkModeToggle />
 
-              {isAuthenticated ? (
+              {isAuthenticated && (
                 <Button
                   size="md"
                   className={clsx(dark ? "text-white" : "text-[#1B2063]")}
@@ -63,24 +69,58 @@ export function Navbar() {
                 >
                   Logout
                 </Button>
-              ) : (
-                <>
-                  <Link href="/login">
-                    <Button size="md" variant="white">
-                      Login
-                    </Button>
-                  </Link>
-                  <Link href="/sign-up">
-                    <Button
-                      size="md"
-                      className="bg-[#1B2063] hover:bg-[#1B2063]"
-                      variant="filled"
-                    >
-                      Sign Up
-                    </Button>
-                  </Link>
-                </>
               )}
+
+              <Menu>
+                <Menu.Target>
+                  <Paper
+                    radius="100%"
+                    bg="#989FCE1A"
+                    h={54}
+                    w={54}
+                    className="flex items-center justify-center"
+                  >
+                    <UserIcon />
+                  </Paper>
+                </Menu.Target>
+
+                <Menu.Dropdown>
+                  <Stack>
+                    <Anchor href="#!">
+                      <Button
+                        size="lg"
+                        variant="outline"
+                        leftIcon={<GoogleIcon />}
+                        className={clsx(
+                          dark
+                            ? "text-white border-white"
+                            : "text-[##1B2063] border-[#1B2063]",
+                          "font-secondary hover:bg-transparent"
+                        )}
+                        style={{ fontWeight: 400 }}
+                      >
+                        Continue with Google
+                      </Button>
+                    </Anchor>
+                    <Anchor href="#!">
+                      <Button
+                        size="lg"
+                        variant="outline"
+                        leftIcon={<GithubIcon />}
+                        className={clsx(
+                          dark
+                            ? "text-white border-white"
+                            : "text-[##1B2063] border-[#1B2063]",
+                          "font-secondary hover:bg-transparent"
+                        )}
+                        style={{ fontWeight: 400 }}
+                      >
+                        Continue with Github
+                      </Button>
+                    </Anchor>
+                  </Stack>
+                </Menu.Dropdown>
+              </Menu>
             </Group>
           </MediaQuery>
         </Flex>
@@ -112,7 +152,7 @@ export function Navbar() {
                 <DarkModeToggle />
 
                 <Stack spacing={0} style={{ borderTop: "1px solid #989FCE1A" }}>
-                  {isAuthenticated ? (
+                  {isAuthenticated && (
                     <Button
                       size="lg"
                       className={clsx(dark ? "text-white" : "text-[#1B2063]")}
@@ -120,23 +160,6 @@ export function Navbar() {
                     >
                       Logout
                     </Button>
-                  ) : (
-                    <>
-                      <Link href={`/login`}>
-                        <Button size="lg" fullWidth variant="white">
-                          Login
-                        </Button>
-                      </Link>
-                      <Link href={`/sign-up`}>
-                        <Button
-                          size="lg"
-                          className="bg-[#1B2063] hover:bg-[#1B2063]"
-                          fullWidth
-                        >
-                          Sign up
-                        </Button>
-                      </Link>
-                    </>
                   )}
                 </Stack>
               </Stack>

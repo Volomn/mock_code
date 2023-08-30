@@ -20,13 +20,13 @@ export default function Dashboard() {
     <AppLayout>
       <Container size="xl" py={64}>
         <Stack spacing={16}>
-          <h1
-            className="font-secondary"
-            style={{ margin: 0, fontSize: "48px" }}
-          >
+          <h1 className="font-secondary text-primary-01 font-semibold text-5xl m-0">
             Challenges
           </h1>
-          <article className="font-primary" style={{ maxWidth: "1000px" }}>
+          <article
+            className="font-primary text-shade-01 dark:text-white"
+            style={{ maxWidth: "1000px" }}
+          >
             Lorem ipsum dolor sit amet consectetur. Turpis luctus vel amet
             pellentesque aliquam senectus molestie placerat. Gravida proin
             mollis a morbi erat vulputate rhoncus. Massa felis leo et feugiat
@@ -41,17 +41,17 @@ export default function Dashboard() {
             size="lg"
           />
         </Box> */}
-        <Stack spacing={32}>
+        <Stack spacing={64} my={32}>
           <Competitions active />
-          <Competitions />
+          <Competitions active={false} />
         </Stack>
       </Container>
     </AppLayout>
   );
 }
 
-function Competitions({ active }: { active?: boolean }) {
-  const { isLoading, data } = useGetCompetions();
+function Competitions({ active }: { active: boolean }) {
+  const { isLoading, data } = useGetCompetions(active);
   if (isLoading) {
     return (
       <Stack>
@@ -67,31 +67,15 @@ function Competitions({ active }: { active?: boolean }) {
 
   return (
     <Box>
-      <Box>
-        <h3
-          style={{
-            fontSize: "28px",
-            fontWeight: 600,
-          }}
-        >
-          {active ? "Active Competitions" : "All Competitions"}
-        </h3>
-      </Box>
       <Container fluid>
+        <Box mb={24}>
+          <h3 className="text-[28px] text-primary-01 font-semibold">
+            {active ? "Active Competitions" : "All Competitions"}
+          </h3>
+        </Box>
         <Box
           display="grid"
-          style={{ gap: "1rem" }}
-          sx={() => ({
-            "@media (min-width: 30em)": {
-              gridTemplateColumns: "1fr",
-            },
-            "@media (min-width: 48em)": {
-              gridTemplateColumns: "1fr 1fr",
-            },
-            "@media (min-width: 64em)": {
-              gridTemplateColumns: "1fr 1fr 1fr",
-            },
-          })}
+          className="grid gap-6 grid-cols-1 sm:grid-cols-2 md:grid-cols-3"
         >
           {data?.data.map((competition) => (
             <Competition key={competition.id} competition={competition} />

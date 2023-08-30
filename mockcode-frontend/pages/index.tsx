@@ -5,7 +5,6 @@ import GithubIcon from "@/public/github.svg";
 
 import {
   Anchor,
-  Box,
   Button,
   Center,
   Container,
@@ -13,11 +12,11 @@ import {
   Text,
   clsx,
   useMantineColorScheme,
-  useMantineTheme,
 } from "@mantine/core";
 import { AppLayout } from "@/layouts/app-layout";
 import { sora } from "@/utils/fonts";
 import { getGithubAuthDetails, getGoogleAuthDetails } from "@/api/lib";
+import { useAuthStatus } from "@/hooks/auth";
 
 export default function Home({
   githubAuthDetails,
@@ -28,6 +27,8 @@ export default function Home({
 }) {
   const { colorScheme } = useMantineColorScheme();
   const dark = colorScheme === "dark";
+  const [isAuthenticated] = useAuthStatus();
+
   return (
     <AppLayout>
       <Center style={{ minHeight: "calc(100vh - 90px - 64px)" }}>
@@ -55,43 +56,45 @@ export default function Home({
               "font-secondary"
             )}
           >
-            Lorem ipsum dolor sit amet consectetur. Turpis ipsum etiam id nisi
-            tempus sed elementum at. Pellentesque morbi imperdiet egestas.
+            Embark on a journey to challenge your coding prowess in our
+            competitions, all while embracing the joy of the experience.
           </Text>
-          <Group position="center" mt={16} mb={32}>
-            <Anchor href={googleAuthDetails.to}>
-              <Button
-                size="lg"
-                variant="outline"
-                leftIcon={<GoogleIcon />}
-                className={clsx(
-                  dark
-                    ? "text-white border-white"
-                    : "text-[##1B2063] border-[#1B2063]",
-                  "font-secondary hover:bg-transparent"
-                )}
-                style={{ fontWeight: 400 }}
-              >
-                Sign up with Google
-              </Button>
-            </Anchor>
-            <Anchor href={githubAuthDetails.to}>
-              <Button
-                size="lg"
-                variant="outline"
-                leftIcon={<GithubIcon />}
-                className={clsx(
-                  dark
-                    ? "text-white border-white"
-                    : "text-[##1B2063] border-[#1B2063]",
-                  "font-secondary hover:bg-transparent"
-                )}
-                style={{ fontWeight: 400 }}
-              >
-                Sign up with Github
-              </Button>
-            </Anchor>
-          </Group>
+          {!isAuthenticated && (
+            <Group position="center" mt={16} mb={32}>
+              <Anchor href={googleAuthDetails.to}>
+                <Button
+                  size="lg"
+                  variant="outline"
+                  leftIcon={<GoogleIcon />}
+                  className={clsx(
+                    dark
+                      ? "text-white border-white"
+                      : "text-[##1B2063] border-[#1B2063]",
+                    "font-secondary hover:bg-transparent"
+                  )}
+                  style={{ fontWeight: 400 }}
+                >
+                  Continue with Google
+                </Button>
+              </Anchor>
+              <Anchor href={githubAuthDetails.to}>
+                <Button
+                  size="lg"
+                  variant="outline"
+                  leftIcon={<GithubIcon />}
+                  className={clsx(
+                    dark
+                      ? "text-white border-white"
+                      : "text-[##1B2063] border-[#1B2063]",
+                    "font-secondary hover:bg-transparent"
+                  )}
+                  style={{ fontWeight: 400 }}
+                >
+                  Continue with Github
+                </Button>
+              </Anchor>
+            </Group>
+          )}
           <Container pos="relative" h={350}>
             <Image
               src={BannerVector}
@@ -111,7 +114,6 @@ export async function getServerSideProps() {
   const googleAuthDetails = await getGoogleAuthDetails();
   const githubAuthDetails = await getGithubAuthDetails();
 
-  console.log({ githubAuthDetails, googleAuthDetails });
   return {
     props: {
       googleAuthDetails,

@@ -7,11 +7,13 @@ import { showNotification } from "@mantine/notifications";
 import { Competition, LeaderboardEntry, Solutions } from "@/utils/interfaces";
 import { queryClient } from "@/pages/_app";
 
-export function useGetCompetions() {
+export function useGetCompetions(active: boolean) {
   return useQuery({
-    queryKey: ["competitions"],
+    queryKey: ["competitions", active],
     queryFn: function (): Promise<AxiosResponse<Competition[]>> {
-      return axiosInstance.get("/challenges/");
+      return axiosInstance.get(
+        active ? "/challenges/?isOpen=true" : "/challenges/"
+      );
     },
   });
 }
