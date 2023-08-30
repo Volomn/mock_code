@@ -5,6 +5,7 @@ import (
 	"github.com/Volomn/mock_code/backend/api/routers/auth"
 	"github.com/Volomn/mock_code/backend/api/routers/challenge"
 	"github.com/Volomn/mock_code/backend/api/routers/leaderboard"
+	"github.com/Volomn/mock_code/backend/api/routers/me"
 	"github.com/Volomn/mock_code/backend/api/routers/submission"
 	"github.com/Volomn/mock_code/backend/app"
 	"github.com/go-chi/chi/middleware"
@@ -44,5 +45,6 @@ func GetApiRouter(app *app.Application) chi.Router {
 	router.Mount("/challenges", challenge.GetChallengeRouter())
 	router.Mount("/submissions", submission.GetSubmissionRouter())
 	router.Mount("/leaderboard", leaderboard.GetLeaderboardRouter())
+	router.Mount("/me", me.GetMeRouter())
 	return router
 }

@@ -9,14 +9,15 @@ import (
 )
 
 type Challenge struct {
-	ID               uint `gorm:"primaryKey"`
-	CreatedAt        time.Time
-	UpdatedAt        time.Time
-	DeletedAt        gorm.DeletedAt `gorm:"index"`
-	OpenedAt         null.Time
-	Name             string
-	ProblemStatement string
-	InputFiles       datatypes.JSONSlice[string]
-	Judge            string
-	Submissions      []Submission `gorm:"foreignKey:ChallengeId"`
+	ID                  uint `gorm:"primaryKey"`
+	CreatedAt           time.Time
+	UpdatedAt           time.Time
+	DeletedAt           gorm.DeletedAt `gorm:"index"`
+	OpenedAt            null.Time
+	Name                string
+	ShortDescription    string
+	ProblemStatementUrl string
+	InputFiles          datatypes.JSONSlice[string]
+	Judge               string
+	Submissions         []Submission `gorm:"foreignKey:ChallengeId"`
 }

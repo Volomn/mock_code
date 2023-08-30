@@ -1,7 +1,6 @@
 package app
 
 import (
-	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -254,22 +253,60 @@ func (application *Application) CreateAdmin(firstName string, lastName string, e
 	return admin, nil
 }
 
-func (application *Application) AddChallenge(adminId uint, name string, problemStatement string, judge string) (domain.Challenge, error) {
+func (application *Application) AddChallenge(adminId uint, name string, shortDescription string, problemStatementFile io.Reader, problemStatementFilename string, problemStatementContentType string, judge string) (domain.Challenge, error) {
+	// get admin user
 	admin := application.AdminRepo.GetById(adminId)
 	if admin == nil {
 		return domain.Challenge{}, errors.New("Admin not found")
 	}
 
+	// ensure challenge with the same name does not exist
 	existingChallenge := application.ChallengeRepo.GetByName(name)
 	if existingChallenge != nil {
 		return domain.Challenge{}, errors.New("Challenge already exists")
 	}
+
+	// create new aws session
+	sess, err := session.NewSessionWithOptions(session.Options{
+		Profile: "default",
+		Config: aws.Config{
+			Region:      aws.String(viper.GetString(("AWS_REGION"))),
+			Credentials: credentials.NewStaticCredentials(viper.GetString("AWS_ACCESS_KEY_ID"), viper.GetString("AWS_SECRET_ACCESS_KEY"), ""),
+		},
+	})
+
+	if err != nil {
+		slog.Error("Failed to initialize new aws session", "error", err)
+		return domain.Challenge{}, errors.New(err.Error())
+	}
+
+	// define problem statement upload params
+	uploadParams := s3manager.UploadInput{
+		ACL:    aws.String("public-read"),
+		Bucket: aws.String(viper.GetString("AWS_S3_BUCKET")),
+		Body:   problemStatementFile,
+		Key:    aws.String(fmt.Sprintf("%s/%s/%s", "challenges", name, problemStatementFilename)),
+		// ContentDisposition: aws.String("attachment"),
+		ContentType: aws.String(problemStatementContentType),
+	}
+
+	uploader := s3manager.NewUploader(sess)
+
+	// Perform an upload.
+	result, err := uploader.Upload(&uploadParams)
+
+	if err != nil {
+		slog.Error("Problem statement file upload failed", "error", err.Error())
+		return domain.Challenge{}, err
+	}
+
 	challenge := domain.Challenge{
-		Name:             name,
-		ProblemStatement: problemStatement,
-		Judge:            judge,
-		OpenedAt:         null.NewTime(time.Time{}, false),
-		InputFiles:       datatypes.NewJSONSlice([]string{}),
+		Name:                name,
+		ShortDescription:    shortDescription,
+		ProblemStatementUrl: result.Location,
+		Judge:               judge,
+		OpenedAt:            null.NewTime(time.Time{}, false),
+		InputFiles:          datatypes.NewJSONSlice([]string{}),
 	}
 	application.ChallengeRepo.SaveChallenge(&challenge)
 	return challenge, nil
@@ -298,17 +335,10 @@ func (application *Application) AddChallengeInputFile(adminId uint, challengeId 
 		return domain.Challenge{}, errors.New(err.Error())
 	}
 
-	var fileContent []byte
-	_, err = inputFile.Read(fileContent)
-
-	if err != nil {
-		slog.Error("Error reading input file", "error", err.Error())
-	}
-
 	uploadParams := s3manager.UploadInput{
 		ACL:                aws.String("public-read"),
 		Bucket:             aws.String(viper.GetString("AWS_S3_BUCKET")),
-		Body:               bytes.NewReader(fileContent),
+		Body:               inputFile,
 		Key:                aws.String(fmt.Sprintf("%s/%s/%s/%s", "challenges", challenge.Name, "input", filename)),
 		ContentDisposition: aws.String("attachment"),
 		ContentType:        aws.String(contentType),
@@ -326,8 +356,10 @@ func (application *Application) AddChallengeInputFile(adminId uint, challengeId 
 
 	slog.Info("Input file uploaded successfully", "location", result.Location)
 	inputFilesList := challenge.InputFiles
+	slog.Info("Existing challenge input list", "inputList", inputFilesList)
 	inputFilesList = append(inputFilesList, result.Location)
 	challenge.InputFiles = inputFilesList
+	slog.Info("updated challenge input files list", "inputFilesList", challenge.InputFiles)
 	application.ChallengeRepo.SaveChallenge(challenge)
 	return *challenge, nil
 }
@@ -364,6 +396,7 @@ type Solution struct {
 }
 
 func (application *Application) SubmitSolution(userId uint, challengeId uint, solutions []Solution) (domain.Submission, error) {
+
 	user := application.UserRepo.GetById(userId)
 	if user == nil {
 		return domain.Submission{}, errors.New("User not found")
@@ -395,12 +428,10 @@ func (application *Application) SubmitSolution(userId uint, challengeId uint, so
 	submissionsS3Bucket := fmt.Sprintf("%s/%s/%s/%s", "submissions", challenge.Name, fmt.Sprintf("%s_%d", user.Email, user.ID), fmt.Sprintf("Submission%s", time.Now().String()))
 
 	for index, solution := range solutions {
-		var outputFileContent []byte
-
 		uploadParams := s3manager.UploadInput{
 			ACL:                aws.String("public-read"),
 			Bucket:             aws.String(viper.GetString("AWS_S3_BUCKET")),
-			Body:               bytes.NewReader(outputFileContent),
+			Body:               solution.OutputFile,
 			Key:                aws.String(fmt.Sprintf("%s/%s", submissionsS3Bucket, solution.OutputFileName)),
 			ContentDisposition: aws.String("attachment"),
 			ContentType:        aws.String(solution.OutputFileContentType),
@@ -415,6 +446,8 @@ func (application *Application) SubmitSolution(userId uint, challengeId uint, so
 			sols[index] = domain.Solution{InputFileUrl: solution.InputFileName, OutputFileUrl: solution.OutputFileName, ErrorMessage: null.NewString("Invalid output file", true), Score: 0}
 			continue
 		}
+
+		slog.Info("Output file uploaded successfully", "location", uploadResult.Location)
 
 		req, _ := svc.GetObjectRequest(&s3.GetObjectInput{
 			Bucket: aws.String(viper.GetString("AWS_S3_BUCKET")),
@@ -454,15 +487,6 @@ func (application *Application) SubmitSolution(userId uint, challengeId uint, so
 		}
 
 		sols[index] = domain.Solution{InputFileUrl: inputFileUrl, OutputFileUrl: uploadResult.Location, ErrorMessage: null.NewString("", false), Score: score}
-
-		_, err = solution.OutputFile.Read(outputFileContent)
-		if err != nil {
-			slog.Error("Error reading output file", "error", err.Error())
-			sols[index] = domain.Solution{InputFileUrl: inputFileUrl, OutputFileUrl: uploadResult.Location, ErrorMessage: null.NewString("Error reading output file", true), Score: score}
-			continue
-		}
-
-		slog.Info("Output file uploaded successfully", "location", uploadResult.Location)
 	}
 	submission := &domain.Submission{
 		Solutions:   sols,

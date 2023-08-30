@@ -84,6 +84,7 @@ func SubmitSolution(w http.ResponseWriter, r *http.Request) {
 
 	for index, outputFileHandle := range outputFiles {
 		outputFile, err := outputFileHandle.Open()
+		defer outputFile.Close()
 		if err != nil {
 			errorMessage := fmt.Sprintf("Invalid output file %s", outputFileHandle.Filename)
 			render.Render(w, r, util.ErrorBadRequest(err, &errorMessage))
