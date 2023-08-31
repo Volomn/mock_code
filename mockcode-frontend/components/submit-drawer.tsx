@@ -169,6 +169,10 @@ function SolutionUpload({
   const [file, setFile] = useState<File | null>(null);
   const fileLinkPath = fileLink.split("/");
   const fileName = fileLinkPath[fileLinkPath.length - 1];
+
+  const { colorScheme } = useMantineColorScheme();
+  const dark = colorScheme === "dark";
+
   function handleFileSelect(file: File) {
     addFile(idx, file);
     setFile(file);
@@ -176,8 +180,8 @@ function SolutionUpload({
   return (
     <Group position="apart">
       <Group spacing="xs">
-        <DocumentText size="24" color="#1B2063" />
-        <Text className="font-primary" color="#312A50">
+        <DocumentText size="24" color={dark ? "white" : "#1B2063"} />
+        <Text className="font-primary" color={dark ? "gray.3" : "#1B2063"}>
           {fileName}
         </Text>
       </Group>
@@ -187,7 +191,10 @@ function SolutionUpload({
         </Text>
         <FileButton onChange={handleFileSelect} accept="">
           {(props) => (
-            <ActionIcon {...props}>
+            <ActionIcon
+              {...props}
+              className={clsx(dark ? "text-white" : "#1B2063")}
+            >
               <UploadIcon />
             </ActionIcon>
           )}
