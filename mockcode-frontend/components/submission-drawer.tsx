@@ -9,6 +9,8 @@ import {
   Stack,
   Table,
   Text,
+  clsx,
+  useMantineColorScheme,
 } from "@mantine/core";
 import { DocumentText } from "iconsax-react";
 import Image from "next/image";
@@ -32,6 +34,8 @@ export function SubmissionsDrawer({
 }) {
   const router = useRouter();
   const challengeId = router.query.id as string;
+  const { colorScheme } = useMantineColorScheme();
+  const dark = colorScheme === "dark";
   const { isLoading, data } = useGetCompetion(challengeId);
 
   return (
@@ -94,7 +98,7 @@ export function SubmissionsDrawer({
           </Group>
         </Stack>
       </Stack>
-      <Stack>
+      <Stack spacing="xs">
         <Button
           size="md"
           fullWidth
@@ -102,14 +106,28 @@ export function SubmissionsDrawer({
           onClick={() => {
             router.push(`/challenges/${challengeId}/?tab=leaderboard`);
             close();
+            
           }}
+          className="bg-primary-01 hover:bg-primary-01"
         >
           Go to leaderboard
         </Button>
-        <Button size="md" variant="outline" fullWidth onClick={close}>
+        <Button
+          size="md"
+          variant="outline"
+          color={dark ? "gray.3" : "#312A50"}
+          fullWidth
+          onClick={close}
+        >
           View Submissions
         </Button>
-        <Button size="md" variant="white" fullWidth onClick={openSubmitDrawer}>
+        <Button
+          size="md"
+          variant="white"
+          color={dark ? "gray.3" : "#312A50"}
+          fullWidth
+          onClick={openSubmitDrawer}
+        >
           New Submission
         </Button>
       </Stack>
@@ -124,12 +142,21 @@ function SolutionUpload({
   idx: number;
   solution: Solution;
 }) {
+  const { colorScheme } = useMantineColorScheme();
+  const dark = colorScheme === "dark";
+
   return (
     <tr>
       <td>
         <Group spacing="xs">
-          <DocumentText size="18" color="#1B2063" />
-          <Text className="font-primary" color="#312A50" ml={4}>
+          <span className={clsx(dark ? "text-white" : "text-primary-01")}>
+            <DocumentText size="18" color="currentColor" />
+          </span>
+          <Text
+            className="font-primary"
+            color={dark ? "white" : "#312A50"}
+            ml={4}
+          >
             {getFilenameFromUrl(solution.inputFile)}
           </Text>
         </Group>
@@ -140,7 +167,9 @@ function SolutionUpload({
             {getFilenameFromUrl(solution.outputFile)}
           </Text>
           <Anchor href={solution.outputFile} download>
-            <DownloadIcon />
+            <span className={clsx(dark ? "text-[#FBB040]" : "text-primary-01")}>
+              <DownloadIcon />
+            </span>
           </Anchor>
         </Group>
       </td>

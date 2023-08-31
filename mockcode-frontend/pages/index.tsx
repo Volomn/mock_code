@@ -98,7 +98,7 @@ export default function Home({
           <Container pos="relative" h={350}>
             <Image
               src={BannerVector}
-              style={{ objectFit: "fill" }}
+              style={{ objectFit: "contain" }}
               fill
               quality={100}
               alt="vector"

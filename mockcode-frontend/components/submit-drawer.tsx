@@ -5,8 +5,11 @@ import {
   Drawer,
   FileButton,
   Group,
+  Skeleton,
   Stack,
   Text,
+  clsx,
+  useMantineColorScheme,
 } from "@mantine/core";
 import { DocumentText } from "iconsax-react";
 import Image from "next/image";
@@ -16,20 +19,33 @@ import UploadIcon from "@/public/upload-icon.svg";
 import Competition1 from "@/public/competition1.png";
 import { useGetCompetion, useSubmitSolution } from "@/api/dashboard";
 import { useRouter } from "next/router";
+import { SubmissionsDrawer } from "./submission-drawer";
 
 export function SubmitDrawer({
   opened,
   close,
+  open,
 }: {
   opened: boolean;
   close: () => void;
+  open: () => void;
 }) {
   const router = useRouter();
   const challengeId = router.query.id as string;
   const [files, setFiles] = useState<File[]>([]);
+  const [isSubmissionsDrawerOpen, setIsSubmissionsDrawerOpen] = useState(false);
+  const { colorScheme } = useMantineColorScheme();
+  const dark = colorScheme === "dark";
   const { isLoading, data } = useGetCompetion(challengeId);
-  const { mutate: submitSolution, isLoading: submitSolutionLoading } =
-    useSubmitSolution(close);
+  const {
+    mutate: submitSolution,
+    isLoading: submitSolutionLoading,
+    isSuccess: submitSucess,
+    data: submissionData,
+  } = useSubmitSolution(() => {
+    // close();
+    setIsSubmissionsDrawerOpen(true);
+  });
 
   function addFile(index: number, file: File) {
     const currentFiles = [...files];
@@ -51,6 +67,28 @@ export function SubmitDrawer({
     submitSolution(formData);
   }
 
+  // if (submitSolutionLoading) {
+  //   return <Skeleton height="70vh" />;
+  // }
+
+  if (submissionData && isSubmissionsDrawerOpen) {
+    return (
+      <SubmissionsDrawer
+        currentSolution={submissionData.data}
+        openSubmitDrawer={() => {
+          setFiles([]);
+          setIsSubmissionsDrawerOpen(false);
+          open();
+        }}
+        opened={isSubmissionsDrawerOpen}
+        close={() => {
+          close();
+          setIsSubmissionsDrawerOpen(false);
+        }}
+      />
+    );
+  }
+
   return (
     <Drawer
       opened={opened}
@@ -65,47 +103,56 @@ export function SubmitDrawer({
       }
       position="right"
     >
-      <Group>
-        <Box h={50} w={50} pos="relative">
-          <Image
-            src={Competition1}
-            style={{
-              objectPosition: "center",
-              objectFit: "cover",
-              borderRadius: "6px",
-            }}
-            fill
-            alt=""
-          />
-        </Box>
-        <Stack spacing={0}>
-          <Text className="font-secondary">{data?.data.name}</Text>
-          <Text className="font-primary">
-            Upload solution for each input file
-          </Text>
-        </Stack>
-      </Group>
+      {submitSolutionLoading ? (
+        <Skeleton height="70vh" />
+      ) : (
+        <>
+          <Group>
+            <Box h={50} w={50} pos="relative">
+              <Image
+                src={Competition1}
+                style={{
+                  objectPosition: "center",
+                  objectFit: "cover",
+                  borderRadius: "6px",
+                }}
+                fill
+                alt=""
+              />
+            </Box>
+            <Stack spacing={0}>
+              <Text className="font-secondary">{data?.data.name}</Text>
+              <Text className="font-primary">
+                Upload solution for each input file
+              </Text>
+            </Stack>
+          </Group>
 
-      <Stack my={24}>
-        {data?.data.inputFiles.map((file: string, idx) => (
-          <SolutionUpload
-            key={idx}
-            idx={idx}
-            fileLink={file}
-            addFile={addFile}
-          />
-        ))}
-      </Stack>
+          <Stack my={24}>
+            {data?.data.inputFiles.map((file: string, idx) => (
+              <SolutionUpload
+                key={idx}
+                idx={idx}
+                fileLink={file}
+                addFile={addFile}
+              />
+            ))}
+          </Stack>
 
-      <Button
-        size="lg"
-        disabled={!data?.data || files.length < data?.data.inputFiles.length}
-        fullWidth
-        loading={submitSolutionLoading}
-        onClick={handleFileSubmit}
-      >
-        Submit
-      </Button>
+          <Button
+            size="lg"
+            disabled={
+              !data?.data || files.length < data?.data.inputFiles.length
+            }
+            fullWidth
+            loading={submitSolutionLoading}
+            onClick={handleFileSubmit}
+            className="bg-primary-01 hover-bg-primary-01"
+          >
+            Submit
+          </Button>
+        </>
+      )}
     </Drawer>
   );
 }

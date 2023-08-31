@@ -14,38 +14,25 @@ import {
 import Image from "next/image";
 import Competition1 from "@/public/competition1.png";
 import { GetServerSidePropsContext } from "next";
-import { useGetCompetion, useGetSolutions } from "@/api/dashboard";
+import { useGetCompetion } from "@/api/dashboard";
 import { useState } from "react";
 import { useRouter } from "next/router";
 import DownloadIcon from "@/public/download-icon.svg";
-import { formatDate, formatTime } from "@/utils/date-formatter";
 import { SubmitDrawer } from "@/components/submit-drawer";
-import { SubmissionsDrawer } from "@/components/submission-drawer";
-import { Solutions } from "@/utils/interfaces";
 import { Leaderboard } from "@/layouts/competition/leaderboard";
 import { useAuthStatus } from "@/hooks/auth";
+import { Submissions } from "@/layouts/competition/submissions";
 
 export default function Dashboard({ challengeId }: { challengeId: string }) {
   const router = useRouter();
   const { isLoading, data } = useGetCompetion(challengeId);
-  const { isLoading: solutionsLoading, data: solutions } =
-    useGetSolutions(challengeId);
-  const stuff = useAuthStatus()
+  const stuff = useAuthStatus();
   const [drawerIsOpen, setDrawerIsOpen] = useState(false);
-  const [submissionsDrawerOpen, setSubmissionsDrawerOpen] = useState(false);
-  const [currentSolution, setCurrentSolution] = useState<null | Solutions>(
-    null
-  );
-
-  function openSubmissionDetails(solution: Solutions) {
-    setSubmissionsDrawerOpen(true);
-    setCurrentSolution(solution);
-  }
 
   return (
     <AppLayout>
       <Container size="xl" py={64}>
-        {isLoading || solutionsLoading ? (
+        {isLoading ? (
           <LoadingSkeleton />
         ) : (
           <>
@@ -77,6 +64,7 @@ export default function Dashboard({ challengeId }: { challengeId: string }) {
                     ml="auto"
                     size="md"
                     onClick={() => setDrawerIsOpen(true)}
+                    className="bg-[#312A50]"
                   >
                     Submit answer
                   </Button>
@@ -129,58 +117,9 @@ export default function Dashboard({ challengeId }: { challengeId: string }) {
                   </Container>
                 </Tabs.Panel>
                 <Tabs.Panel value="submissions">
-                  <Container size="lg" py={64}>
-                    <Text
-                      style={{}}
-                      weight={600}
-                      size={24}
-                      className="font-secondary"
-                    >
-                      Solutions
-                    </Text>
-
-                    <Text component="p" mt={20} className="font-primary">
-                      Here is a record of all the submissions you have made for
-                      this competition.
-                    </Text>
-
-                    <Table
-                      withBorder
-                      horizontalSpacing="lg"
-                      verticalSpacing="lg"
-                      highlightOnHover
-                    >
-                      <thead>
-                        <tr>
-                          <th>#</th>
-                          <th>Submission ID</th>
-                          <th>Date</th>
-                          <th>Time</th>
-                          <th>Score</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {solutions?.data.map((solution) => (
-                          <tr key={solution.id}>
-                            <td>{solution.id}</td>
-                            <td>{solution.id}</td>
-                            <td>{formatDate(solution.createdAt)}</td>
-                            <td>{formatTime(solution.createdAt)}</td>
-                            <td>{solution.totalScore}</td>
-                            <td>
-                              <Button
-                                size="xs"
-                                variant="white"
-                                onClick={() => openSubmissionDetails(solution)}
-                              >
-                                View submissions
-                              </Button>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </Table>
-                  </Container>
+                  <Submissions
+                    openNewSubmissionModal={() => setDrawerIsOpen(true)}
+                  />
                 </Tabs.Panel>
                 <Tabs.Panel value="leaderboard">
                   <Leaderboard />
@@ -191,23 +130,15 @@ export default function Dashboard({ challengeId }: { challengeId: string }) {
         )}
       </Container>
       <SubmitDrawer
+        open={() => setDrawerIsOpen(true)}
         close={() => setDrawerIsOpen(false)}
         opened={drawerIsOpen}
-      />
-      <SubmissionsDrawer
-        close={() => setSubmissionsDrawerOpen(false)}
-        opened={submissionsDrawerOpen}
-        currentSolution={currentSolution}
-        openSubmitDrawer={() => {
-          setSubmissionsDrawerOpen(false);
-          setDrawerIsOpen(true);
-        }}
       />
     </AppLayout>
   );
 }
 
-function LoadingSkeleton() {
+export function LoadingSkeleton() {
   return (
     <>
       <Skeleton height={200} />

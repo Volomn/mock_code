@@ -51,7 +51,7 @@ export function useGetSolutions(id: string) {
 
 export function useSubmitSolution(successCb: () => void) {
   return useMutation({
-    mutationFn: (solutions: FormData) =>
+    mutationFn: (solutions: FormData): Promise<AxiosResponse<Solutions>> =>
       axiosInstance.post("/submissions/", solutions, {
         headers: {
           Authorization: `Bearer ${Cookies.get(APP_TOKENS.TOKEN)}`,

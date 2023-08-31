@@ -42,7 +42,16 @@ export function Navbar() {
     <>
       <Container size="xl" style={{ height: "100%" }}>
         <Flex justify="space-between" align="center" style={{ height: "100%" }}>
-          <Text size={24} weight="bold" component={Link} href="/">
+          <Text
+            size={24}
+            className={clsx(
+              dark ? "text-white" : "text-primary-01",
+              "font-secondary"
+            )}
+            weight="bold"
+            component={Link}
+            href="/"
+          >
             Mock
           </Text>
 

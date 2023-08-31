@@ -7,6 +7,8 @@ import {
   Skeleton,
   Stack,
   Text,
+  clsx,
+  useMantineColorScheme,
 } from "@mantine/core";
 import Image from "next/image";
 
@@ -16,15 +18,25 @@ import { useRouter } from "next/router";
 import { Competition } from "@/utils/interfaces";
 
 export default function Dashboard() {
+  const { colorScheme } = useMantineColorScheme();
+  const dark = colorScheme === "dark";
   return (
     <AppLayout>
       <Container size="xl" py={64}>
         <Stack spacing={16}>
-          <h1 className="font-secondary text-primary-01 font-semibold text-5xl m-0">
+          <h1
+            className={clsx(
+              dark ? "text-white" : "text-primary-01",
+              "font-secondary font-semibold text-5xl m-0"
+            )}
+          >
             Challenges
           </h1>
           <article
-            className="font-primary text-shade-01 dark:text-white"
+            className={clsx(
+              dark ? "text-white" : "text-shade-01",
+              "font-primary"
+            )}
             style={{ maxWidth: "1000px" }}
           >
             Lorem ipsum dolor sit amet consectetur. Turpis luctus vel amet
@@ -52,6 +64,9 @@ export default function Dashboard() {
 
 function Competitions({ active }: { active: boolean }) {
   const { isLoading, data } = useGetCompetions(active);
+  const { colorScheme } = useMantineColorScheme();
+  const dark = colorScheme === "dark";
+
   if (isLoading) {
     return (
       <Stack>
@@ -67,9 +82,14 @@ function Competitions({ active }: { active: boolean }) {
 
   return (
     <Box>
-      <Container fluid>
+      <Container fluid p={0}>
         <Box mb={24}>
-          <h3 className="text-[28px] text-primary-01 font-semibold">
+          <h3
+            className={clsx(
+              dark ? "text-white" : "text-primary-01",
+              "text-[28px] font-semibold"
+            )}
+          >
             {active ? "Active Competitions" : "All Competitions"}
           </h3>
         </Box>
@@ -88,6 +108,8 @@ function Competitions({ active }: { active: boolean }) {
 
 function Competition({ competition }: { competition: Competition }) {
   const router = useRouter();
+  const { colorScheme } = useMantineColorScheme();
+  const dark = colorScheme === "dark";
 
   return (
     <Paper
@@ -113,7 +135,10 @@ function Competition({ competition }: { competition: Competition }) {
           size={18}
           mt={16}
           mb={8}
-          className="font-secondary"
+          className={clsx(
+            dark ? "text-white" : "text-primary-01",
+            "font-secondary"
+          )}
         >
           {competition.name}
         </Text>
