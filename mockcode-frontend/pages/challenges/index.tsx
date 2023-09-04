@@ -39,10 +39,9 @@ export default function Dashboard() {
             )}
             style={{ maxWidth: "1000px" }}
           >
-            Lorem ipsum dolor sit amet consectetur. Turpis luctus vel amet
-            pellentesque aliquam senectus molestie placerat. Gravida proin
-            mollis a morbi erat vulputate rhoncus. Massa felis leo et feugiat
-            pellentesque.
+            View all challenges read problem statement, download input files
+            upload your solutions which will get scored immediately and view the
+            leaderboard.
           </article>
         </Stack>
 
@@ -143,7 +142,7 @@ function Competition({ competition }: { competition: Competition }) {
           {competition.name}
         </Text>
         <Text component="p" m={0} lineClamp={2}>
-          {competition.problemStatement}
+          {competition.shortDescription || ""}
         </Text>
       </Stack>
     </Paper>
