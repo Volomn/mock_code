@@ -2,6 +2,7 @@ import { AppLayout } from "@/layouts/app-layout";
 import {
   Box,
   Container,
+  Flex,
   Group,
   Paper,
   Skeleton,
@@ -96,9 +97,30 @@ function Competitions({ active }: { active: boolean }) {
           display="grid"
           className="grid gap-6 grid-cols-1 sm:grid-cols-2 md:grid-cols-3"
         >
-          {data?.data.map((competition) => (
-            <Competition key={competition.id} competition={competition} />
-          ))}
+          {data?.data && data?.data.length < 1 ? (
+            <Flex
+              h={400}
+              w="100%"
+              justify="center"
+              align="center"
+              style={{ borderRadius: 8 }}
+              bg={dark ? "dark.6" : "gray.1"}
+              className="col-span-1 sm:col-span-2 md:col-span-3"
+              styles={{
+                border: dark ? "dark.9" : "gray.3",
+              }}
+            >
+              <Text size={24}>
+                {active
+                  ? "No activated challenges yet"
+                  : "No challenges uploaded yet"}
+              </Text>
+            </Flex>
+          ) : (
+            data?.data.map((competition) => (
+              <Competition key={competition.id} competition={competition} />
+            ))
+          )}
         </Box>
       </Container>
     </Box>
