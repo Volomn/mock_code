@@ -67,18 +67,18 @@ export function AppLayout({ children }: { children: ReactNode }) {
 
             <Group>
               <Anchor
-                href="#!"
+                href="https://app.getterms.io/view/y1KbZ/privacy/en-us"
                 className={clsx(
-                  dark ? "text-white" : "text-[##1B2063]",
+                  dark ? "text-white" : "text-[#1B2063]",
                   "font-secondary text-xs"
                 )}
               >
                 Privacy Policy
               </Anchor>
               <Anchor
-                href="#!"
+                href="https://app.getterms.io/view/y1KbZ/tos/en-us"
                 className={clsx(
-                  dark ? "text-white" : "text-[##1B2063]",
+                  dark ? "text-white" : "text-[#1B2063]",
                   "font-secondary text-xs"
                 )}
               >
