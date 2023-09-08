@@ -21,7 +21,7 @@ func NewJudgeMethodNotDefinedError(msg string) *JudgeMethoNotDefinedError {
 type Judge struct {
 }
 
-func (judge *Judge) Call(JudgeName string, inputFile io.Reader, outputFile io.Reader) (float32, error) {
+func (judge *Judge) Call(JudgeName string, inputFile io.Reader, outputFile io.Reader) (int, error) {
 	JudgeMethod := reflect.ValueOf(judge).MethodByName(JudgeName)
 	if JudgeMethod.IsValid() == false {
 		errorMessage := fmt.Sprintf("Judge method %s not defined", JudgeName)
@@ -29,7 +29,7 @@ func (judge *Judge) Call(JudgeName string, inputFile io.Reader, outputFile io.Re
 	}
 	in := []reflect.Value{reflect.ValueOf(inputFile), reflect.ValueOf(outputFile)}
 	res := JudgeMethod.Call(in)
-	score := res[0].Interface().(float32)
+	score := res[0].Interface().(int)
 	err := res[1].Interface()
 	if err == nil {
 		return score, nil

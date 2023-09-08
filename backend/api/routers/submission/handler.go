@@ -17,14 +17,14 @@ import (
 type SolutionResponse struct {
 	InputFile    string  `json:"inputFile"`
 	OutputFile   string  `json:"outputFile"`
-	Score        float32 `json:"score"`
+	Score        int     `json:"score"`
 	ErrorMessage *string `json:"errorMessage"`
 }
 
 type SubmissionResponse struct {
 	ID         uint               `json:"id"`
 	CreatedAt  time.Time          `json:"createdAt"`
-	TotalScore float32            `json:"totalScore"`
+	TotalScore int                `json:"totalScore"`
 	Solutions  []SolutionResponse `json:"solutions"`
 }
 
@@ -48,7 +48,7 @@ func NewSubmissionResponse(submission *domain.Submission) *SubmissionResponse {
 	return &SubmissionResponse{
 		ID:         submission.ID,
 		CreatedAt:  submission.CreatedAt,
-		TotalScore: float32(totalScore),
+		TotalScore: totalScore,
 		Solutions:  solutions,
 	}
 }

@@ -15,6 +15,6 @@ type Solution struct {
 	SubmissionId  uint
 	InputFileUrl  string
 	OutputFileUrl string
-	Score         float32
+	Score         int
 	ErrorMessage  null.String
 }
