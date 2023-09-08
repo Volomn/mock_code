@@ -4,7 +4,8 @@ export interface Competition {
   updatedAt: string;
   isOpened: boolean;
   name: string;
-  problemStatement: string;
+  problemStatementUrl: string;
+  shortDescription: string;
   inputFiles: string[];
 }
 

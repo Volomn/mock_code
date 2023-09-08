@@ -44,6 +44,9 @@ export default function Dashboard({ challengeId }: { challengeId: string }) {
                 alt=""
                 priority
               />
+              <Box className="absolute lef-0 top-0 w-full h-full bg-black bg-opacity-40 p-10 text-white font-semibold">
+                {data?.data.shortDescription}
+              </Box>
             </Box>
 
             <Box my={8}>
@@ -78,12 +81,19 @@ export default function Dashboard({ challengeId }: { challengeId: string }) {
                       size={24}
                       className="font-secondary"
                     >
-                      {data?.data.name}
+                      {data?.data.name} Problem Statement
                     </Text>
 
-                    <Text component="p" className="font-primary">
-                      {data?.data.problemStatement}
-                    </Text>
+                    {data?.data.problemStatementUrl && (
+                      <Box>
+                        <iframe
+                          className="w-full h-[1000px]"
+                          allow="fullscreen"
+                          datatype="pdf"
+                          src={data?.data.problemStatementUrl}
+                        ></iframe>
+                      </Box>
+                    )}
                   </Container>
                 </Tabs.Panel>
 
