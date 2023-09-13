@@ -29,6 +29,13 @@ export default function Dashboard({ challengeId }: { challengeId: string }) {
   const stuff = useAuthStatus();
   const [drawerIsOpen, setDrawerIsOpen] = useState(false);
 
+  function getFileName(fileUrl: string) {
+    if (!fileUrl) return "";
+    const fileLinkPath = fileUrl.split("/");
+    const fileName = fileLinkPath[fileLinkPath.length - 1];
+    return fileName;
+  }
+
   return (
     <AppLayout>
       <Container size="xl" py={64}>
@@ -113,9 +120,9 @@ export default function Dashboard({ challengeId }: { challengeId: string }) {
                     </Text>
                     <Stack>
                       {data?.data.inputFiles.map((file: string, idx) => (
-                        <Group key={idx} position="apart">
-                          <Text className="font-primary">
-                            Input file {idx + 1}
+                        <Group key={idx} position="apart" align="center">
+                          <Text className="font-primary" size="md" weight={500}>
+                            {getFileName(file)}
                           </Text>
 
                           <Anchor href={file} download>
