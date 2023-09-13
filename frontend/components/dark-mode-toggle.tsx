@@ -17,7 +17,6 @@ export default function DarkModeToggle() {
 
   return (
     <Group className="flex gap-4 items-center" tabIndex={1}>
-      <span>Theme</span>
       <Flex
         onClick={() => toggleColorScheme()}
         justify="space-between"
