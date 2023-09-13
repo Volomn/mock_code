@@ -10,6 +10,7 @@ import {
   Table,
   Tabs,
   Text,
+  Tooltip,
 } from "@mantine/core";
 import Image from "next/image";
 import Competition1 from "@/public/competition1.png";
@@ -26,7 +27,7 @@ import { Submissions } from "@/layouts/competition/submissions";
 export default function Dashboard({ challengeId }: { challengeId: string }) {
   const router = useRouter();
   const { isLoading, data } = useGetCompetion(challengeId);
-  const stuff = useAuthStatus();
+  const [isAuthenticated] = useAuthStatus();
   const [drawerIsOpen, setDrawerIsOpen] = useState(false);
 
   function getFileName(fileUrl: string) {
@@ -70,14 +71,30 @@ export default function Dashboard({ challengeId }: { challengeId: string }) {
                   <Tabs.Tab value="submissions">Submissions</Tabs.Tab>
                   <Tabs.Tab value="leaderboard">Leaderboard</Tabs.Tab>
 
-                  <Button
-                    ml="auto"
-                    size="md"
-                    onClick={() => setDrawerIsOpen(true)}
-                    className="bg-[#312A50]"
-                  >
-                    Submit answer
-                  </Button>
+                  <Box ml="auto">
+                    {isAuthenticated ? (
+                      <Tooltip label="Login to submit a solution">
+                        <Button
+                          size="md"
+                          data-disabled
+                          sx={{ "&[data-disabled]": { pointerEvents: "all" } }}
+                          onClick={(event) => event.preventDefault()}
+                          className="bg-[#312A50]"
+                        >
+                          New Submission
+                        </Button>
+                      </Tooltip>
+                    ) : (
+                      <Button
+                        size="md"
+                        onClick={() => setDrawerIsOpen(true)}
+                        className="bg-[#312A50]"
+                        disabled={!isAuthenticated}
+                      >
+                        New Submission
+                      </Button>
+                    )}
+                  </Box>
                 </Tabs.List>
 
                 <Tabs.Panel value="description">

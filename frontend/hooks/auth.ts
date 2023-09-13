@@ -4,9 +4,9 @@ import Cookies from "js-cookie";
 import jwt_decode from "jwt-decode";
 import { useRouter } from "next/router";
 
-export function useAuthStatus() {
-  const authToken = Cookies.get(APP_TOKENS.TOKEN);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+export function useAuthStatus(): [boolean, string] {
+  const authToken: string = Cookies.get(APP_TOKENS.TOKEN) || "";
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
 
   useEffect(
     function () {
