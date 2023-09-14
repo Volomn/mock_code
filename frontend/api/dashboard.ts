@@ -7,6 +7,33 @@ import { showNotification } from "@mantine/notifications";
 import { Competition, LeaderboardEntry, Solutions } from "@/utils/interfaces";
 import { queryClient } from "@/pages/_app";
 
+export function useUserDetails() {
+  return useQuery({
+    queryKey: ["me"],
+    queryFn: function (): Promise<AxiosResponse> {
+      return axiosInstance.get(`/me/`);
+    },
+  });
+}
+
+export function useGetGoogleLoginUrl() {
+  return useQuery({
+    queryKey: ["login-url", "google"],
+    queryFn: function (): Promise<AxiosResponse<{ to: string }>> {
+      return axiosInstance.get(`/auth/google?medium=google`);
+    },
+  });
+}
+
+export function useGetGithubLoginUrl() {
+  return useQuery({
+    queryKey: ["login-url", "github"],
+    queryFn: function (): Promise<AxiosResponse<{ to: string }>> {
+      return axiosInstance.get(`/auth/github?medium=github`);
+    },
+  });
+}
+
 export function useGetCompetions(active: boolean) {
   return useQuery({
     queryKey: ["competitions", active],

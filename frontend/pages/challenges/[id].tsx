@@ -72,7 +72,7 @@ export default function Dashboard({ challengeId }: { challengeId: string }) {
                   <Tabs.Tab value="leaderboard">Leaderboard</Tabs.Tab>
 
                   <Box ml="auto">
-                    {isAuthenticated ? (
+                    {!isAuthenticated ? (
                       <Tooltip label="Login to submit a solution">
                         <Button
                           size="md"

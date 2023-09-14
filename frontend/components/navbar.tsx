@@ -24,6 +24,12 @@ import DarkModeToggle from "./dark-mode-toggle";
 import UserIcon from "@/public/user-icon.svg";
 import GoogleIcon from "@/public/google-icon.svg";
 import GithubIcon from "@/public/github.svg";
+import { LoginCurve } from "iconsax-react";
+import {
+  useGetGithubLoginUrl,
+  useGetGoogleLoginUrl,
+  useUserDetails,
+} from "@/api/dashboard";
 
 const scaleY = {
   in: { opacity: 1, transform: "scaleY(1)" },
@@ -38,6 +44,10 @@ export function Navbar() {
   const { colorScheme } = useMantineColorScheme();
   const dark = colorScheme === "dark";
   const logout = useLogout();
+
+  const { data: googleLogin } = useGetGoogleLoginUrl();
+  const { data: githubLogin } = useGetGithubLoginUrl();
+  // const { data: userDetails } = useUserDetails();
   return (
     <>
       <Container size="xl" style={{ height: "100%" }}>
@@ -85,50 +95,52 @@ export function Navbar() {
                   <Paper
                     radius="100%"
                     bg="#989FCE1A"
-                    h={54}
-                    w={54}
-                    className="flex items-center justify-center"
+                    h={50}
+                    w={50}
+                    className="flex items-center justify-center cursor-pointer"
                   >
-                    <UserIcon />
+                    {isAuthenticated ? <UserIcon /> : <LoginCurve />}
                   </Paper>
                 </Menu.Target>
 
-                <Menu.Dropdown>
-                  <Stack>
-                    <Anchor href="#!">
-                      <Button
-                        size="lg"
-                        variant="outline"
-                        leftIcon={<GoogleIcon />}
-                        className={clsx(
-                          dark
-                            ? "text-white border-white"
-                            : "text-[##1B2063] border-[#1B2063]",
-                          "font-secondary hover:bg-transparent"
-                        )}
-                        style={{ fontWeight: 400 }}
-                      >
-                        Continue with Google
-                      </Button>
-                    </Anchor>
-                    <Anchor href="#!">
-                      <Button
-                        size="lg"
-                        variant="outline"
-                        leftIcon={<GithubIcon />}
-                        className={clsx(
-                          dark
-                            ? "text-white border-white"
-                            : "text-[##1B2063] border-[#1B2063]",
-                          "font-secondary hover:bg-transparent"
-                        )}
-                        style={{ fontWeight: 400 }}
-                      >
-                        Continue with Github
-                      </Button>
-                    </Anchor>
-                  </Stack>
-                </Menu.Dropdown>
+                {!isAuthenticated && (
+                  <Menu.Dropdown>
+                    <Stack>
+                      <Anchor href={googleLogin?.data.to}>
+                        <Button
+                          size="lg"
+                          variant="outline"
+                          leftIcon={<GoogleIcon />}
+                          className={clsx(
+                            dark
+                              ? "text-white border-white"
+                              : "text-[##1B2063] border-[#1B2063]",
+                            "font-secondary hover:bg-transparent"
+                          )}
+                          style={{ fontWeight: 400 }}
+                        >
+                          Continue with Google
+                        </Button>
+                      </Anchor>
+                      <Anchor href={githubLogin?.data.to}>
+                        <Button
+                          size="lg"
+                          variant="outline"
+                          leftIcon={<GithubIcon />}
+                          className={clsx(
+                            dark
+                              ? "text-white border-white"
+                              : "text-[##1B2063] border-[#1B2063]",
+                            "font-secondary hover:bg-transparent"
+                          )}
+                          style={{ fontWeight: 400 }}
+                        >
+                          Continue with Github
+                        </Button>
+                      </Anchor>
+                    </Stack>
+                  </Menu.Dropdown>
+                )}
               </Menu>
             </Group>
           </MediaQuery>
