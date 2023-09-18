@@ -8,6 +8,8 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+
+	"golang.org/x/exp/slog"
 )
 
 func Distance(x1, y1, x2, y2 int) int {
@@ -201,21 +203,22 @@ func (grid *Grid) GetNumberOfCompletedOrders() int {
 }
 
 func (grid *Grid) ProcessCommand(command string) (*Drone, error) {
-	re := regexp.MustCompile(`^(\d+)\s([LD])\s(\d+)\s(\d+)\s(\d+)$`)
-	match := re.FindStringSubmatch(command)
-	if match == nil {
-		return nil, fmt.Errorf("Command %s is invalid", command)
+	match, err := regexp.MatchString(`^(\d+)\s([LD])\s(\d+)\s(\d+)\s(\d+)$`, command)
+	if err != nil || match == false {
+		return nil, fmt.Errorf("Commangolangd %s is invalid", command)
 	}
-	droneIndex, _ := strconv.Atoi(match[0])
-	droneCommand := match[1]
-	warehouseOrderIndex, _ := strconv.Atoi(match[2])
-	productType, _ := strconv.Atoi(match[3])
-	numberOfProducts, _ := strconv.Atoi(match[4])
+	chars := strings.Split(command, " ")
+	droneIndex, _ := strconv.Atoi(chars[0])
+	droneCommand := chars[1]
+	warehouseOrderIndex, _ := strconv.Atoi(chars[2])
+	productType, _ := strconv.Atoi(chars[3])
+	numberOfProducts, _ := strconv.Atoi(chars[4])
 
 	switch droneCommand {
 	case "L":
 		return grid.Drones[droneIndex].Load(grid.Warehourses[warehouseOrderIndex], *grid.GetProduct(productType), numberOfProducts)
 	case "D":
+		slog.Info("About to deliver", "gridOrders", grid.Orders, "warehouseOrderIndex", warehouseOrderIndex, "productType", productType, "numberOfProducts", numberOfProducts)
 		return grid.Drones[droneIndex].Deliver(grid.Orders[warehouseOrderIndex], *grid.GetProduct(productType), numberOfProducts)
 	default:
 		return nil, fmt.Errorf("Command %s is invalid", command)
@@ -329,14 +332,31 @@ func GridFromInputFile(input io.Reader) (*Grid, error) {
 	return &Grid{Warehourses: warehouses, Drones: drones, Orders: orders, Products: products, Rows: numberOfRows, Cols: numberOfColumns, Turns: totalNumberOfTurns}, nil
 }
 
-func (judge *Judge) Delivery(solution io.Reader, input io.Reader) (int, error) {
+func (judge *Judge) Delivery(input, solution io.Reader) (int, error) {
+	score := 0
+	var judgeError error
+	judgeError = nil
+
+	defer func() {
+		judgeError = nil
+		if r := recover(); r != nil {
+			slog.Error("Recovered in f", r)
+			score = 0
+			judgeError = r.(error)
+
+		}
+
+	}()
+
 	grid, error := GridFromInputFile(input)
 	if error != nil {
 		return 0, error
 	}
+	slog.Info("Grid is", "grid", *grid)
 	grid, error = grid.Simulate(solution)
 	if error != nil {
 		return 0, error
 	}
-	return grid.CalculateScore(), nil
+	score = grid.CalculateScore()
+	return score, judgeError
 }
