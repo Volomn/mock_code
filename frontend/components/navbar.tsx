@@ -47,7 +47,7 @@ export function Navbar() {
 
   const { data: googleLogin } = useGetGoogleLoginUrl();
   const { data: githubLogin } = useGetGithubLoginUrl();
-  // const { data: userDetails } = useUserDetails();
+  const { data: userDetails, isLoading } = useUserDetails();
   return (
     <>
       <Container size="xl" style={{ height: "100%" }}>
@@ -78,18 +78,6 @@ export function Navbar() {
           <MediaQuery smallerThan="sm" styles={{ display: "none" }}>
             <Group>
               <DarkModeToggle />
-
-              {isAuthenticated && (
-                <Button
-                  size="md"
-                  className={clsx(dark ? "text-white" : "text-[#1B2063]")}
-                  onClick={logout}
-                  variant="white"
-                >
-                  Logout
-                </Button>
-              )}
-
               <Menu>
                 <Menu.Target>
                   <Paper
@@ -103,7 +91,7 @@ export function Navbar() {
                   </Paper>
                 </Menu.Target>
 
-                {!isAuthenticated && (
+                {!isAuthenticated ? (
                   <Menu.Dropdown>
                     <Stack>
                       <Anchor href={googleLogin?.data.to}>
@@ -140,6 +128,27 @@ export function Navbar() {
                       </Anchor>
                     </Stack>
                   </Menu.Dropdown>
+                ) : (
+                  <Menu.Dropdown>
+                    <Stack p={10} spacing="xs">
+                      <Text>
+                        {userDetails?.data.firstName}{" "}
+                        {userDetails?.data.lastName}
+                      </Text>
+                      <Text>{userDetails?.data.email}</Text>
+                      <Button
+                        className={clsx(
+                          dark
+                            ? "text-[#1B2063] bg-white"
+                            : "text-white bg-[#1B2063]"
+                        )}
+                        onClick={logout}
+                        variant="white"
+                      >
+                        Logout
+                      </Button>
+                    </Stack>
+                  </Menu.Dropdown>
                 )}
               </Menu>
             </Group>
@@ -174,13 +183,24 @@ export function Navbar() {
 
                 <Stack spacing={0} style={{ borderTop: "1px solid #989FCE1A" }}>
                   {isAuthenticated && (
-                    <Button
-                      size="lg"
-                      className={clsx(dark ? "text-white" : "text-[#1B2063]")}
-                      onClick={logout}
-                    >
-                      Logout
-                    </Button>
+                    <Stack p={10} spacing="xs">
+                      <Text>
+                        {userDetails?.data.firstName}{" "}
+                        {userDetails?.data.lastName}
+                      </Text>
+                      <Text>{userDetails?.data.email}</Text>
+                      <Button
+                        className={clsx(
+                          dark
+                            ? "text-[#1B2063] bg-white"
+                            : "text-white bg-[#1B2063]"
+                        )}
+                        onClick={logout}
+                        variant="white"
+                      >
+                        Logout
+                      </Button>
+                    </Stack>
                   )}
                 </Stack>
               </Stack>

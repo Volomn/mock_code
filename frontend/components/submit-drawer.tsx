@@ -135,15 +135,14 @@ export function SubmitDrawer({
                 idx={idx}
                 fileLink={file}
                 addFile={addFile}
+                file={files[idx] || null}
               />
             ))}
           </Stack>
 
           <Button
             size="lg"
-            disabled={
-              !data?.data || files.length < data?.data.inputFiles.length
-            }
+            disabled={!data?.data || files.length < 1}
             fullWidth
             loading={submitSolutionLoading}
             onClick={handleFileSubmit}
@@ -161,21 +160,22 @@ function SolutionUpload({
   idx,
   addFile,
   fileLink,
+  file,
 }: {
   idx: number;
   addFile: (arg0: number, arg1: File) => void;
   fileLink: string;
+  file: File | null;
 }) {
-  const [file, setFile] = useState<File | null>(null);
   const fileLinkPath = fileLink.split("/");
   const fileName = fileLinkPath[fileLinkPath.length - 1];
-
   const { colorScheme } = useMantineColorScheme();
   const dark = colorScheme === "dark";
 
   function handleFileSelect(file: File) {
-    addFile(idx, file);
-    setFile(file);
+    if (file) {
+      addFile(idx, file);
+    }
   }
   return (
     <Group position="apart">

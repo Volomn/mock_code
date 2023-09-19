@@ -7,11 +7,22 @@ import { showNotification } from "@mantine/notifications";
 import { Competition, LeaderboardEntry, Solutions } from "@/utils/interfaces";
 import { queryClient } from "@/pages/_app";
 
+interface User {
+  id: number;
+  firstName: string;
+  lastName: string;
+  email: string;
+}
+
 export function useUserDetails() {
   return useQuery({
     queryKey: ["me"],
-    queryFn: function (): Promise<AxiosResponse> {
-      return axiosInstance.get(`/me/`);
+    queryFn: function (): Promise<AxiosResponse<User>> {
+      return axiosInstance.get(`/me/`, {
+        headers: {
+          Authorization: `Bearer ${Cookies.get(APP_TOKENS.TOKEN)}`,
+        },
+      });
     },
   });
 }
