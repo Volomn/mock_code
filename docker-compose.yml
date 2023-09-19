@@ -27,6 +27,23 @@ services:
     env_file:
       - backend/.env
 
+  mock_code_web:
+    image: mock_code_web:dev
+    build:
+      context: frontend
+      dockerfile: Dockerfile
+      args:
+        - APP_BASE_URL=http://localhost:6005/api
+    container_name: mock_code_web
+    ports:
+      - "6006:3000"
+    environment:
+      - APP_BASE_URL=http://mock_code_api:5000/api
+    depends_on:
+      - mock_code_api
+    volumes:
+      - ./frontend:/code
+    # command: ["next", "dev"]
 
 volumes:
   mock_code_db_data:

@@ -428,6 +428,7 @@ func (application *Application) SubmitSolution(userId uint, challengeId uint, so
 	submissionsS3Bucket := fmt.Sprintf("%s/%s/%s/%s", "submissions", challenge.Name, fmt.Sprintf("%s_%d", user.Email, user.ID), fmt.Sprintf("Submission%s", time.Now().String()))
 
 	for index, solution := range solutions {
+		slog.Info("Computing score for", "inputFile", solution.InputFileName, "outputFile", solution.OutputFileName)
 		uploadParams := s3manager.UploadInput{
 			ACL:                aws.String("public-read"),
 			Bucket:             aws.String(viper.GetString("AWS_S3_BUCKET")),
