@@ -13,13 +13,10 @@ import { parseStringToObject } from "@/utils/string-object-parser";
 import Cookies from "js-cookie";
 import {
   getGithubAuthDetails,
-  getGoogleAuthDetails,
   signInWithGithub,
-  signInWithGoogle,
 } from "@/api/lib";
 
 import { AppLayout } from "@/layouts/app-layout";
-import GoogleIcon from "@/public/google-icon.svg";
 import GithubIcon from "@/public/github.svg";
 import { APP_TOKENS } from "@/utils/constants";
 import { useRouter } from "next/router";
@@ -29,16 +26,13 @@ import Link from "next/link";
 interface LoginProps {
   redirect: boolean;
   githubAuthDetails: { to: string };
-  googleAuthDetails: { to: string };
   token: string;
 }
 export default function Login({
   redirect,
-  googleAuthDetails,
   githubAuthDetails,
   token,
 }: LoginProps) {
-  // console.log({ redirect, googleAuthDetails, githubAuthDetails });
   const router = useRouter();
 
   useEffect(
@@ -71,16 +65,6 @@ export default function Login({
               Sign In
             </Text>
             <Stack spacing="md" style={{ width: "100%" }}>
-              <Anchor href={googleAuthDetails.to}>
-                <Button
-                  size="lg"
-                  variant="outline"
-                  fullWidth
-                  leftIcon={<GoogleIcon />}
-                >
-                  Login with Google
-                </Button>
-              </Anchor>
               <Anchor href={githubAuthDetails.to}>
                 <Button
                   size="lg"
@@ -103,7 +87,6 @@ export default function Login({
 }
 
 export async function getServerSideProps(ctx: GetServerSidePropsContext) {
-  const googleAuthDetails = await getGoogleAuthDetails();
   const githubAuthDetails = await getGithubAuthDetails();
   const { code, state } = ctx.query as Record<string, string>;
 
@@ -111,7 +94,6 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
     return {
       props: {
         redirect: false,
-        googleAuthDetails,
         githubAuthDetails,
       },
     };
@@ -120,18 +102,7 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
   const { medium } = parseStringToObject(decodedState.extra);
   let token = "",
     token_type = "";
-  if (medium === "google") {
-    const googleResponse = await signInWithGoogle({
-      code: code,
-      state: state,
-    });
-    // const { token_type, token } = googleResponse;
-    token = googleResponse.token;
-    console.log(token);
-    // console.log({ token, token_type });
-    // Cookies.set(APP_TOKENS.TOKEN_TYPE, token_type);
-    Cookies.set(APP_TOKENS.TOKEN, token);
-  } else if (medium === "github") {
+  if (medium === "github") {
     const githubResponse = await signInWithGithub({
       code: code,
       state: state,
@@ -151,7 +122,6 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
   return {
     props: {
       redirect: true,
-      googleAuthDetails,
       githubAuthDetails,
       token,
     },

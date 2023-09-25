@@ -1,18 +1,15 @@
 import { AppLayout } from "@/layouts/app-layout";
 import { Anchor, Button, Center, Stack, Text } from "@mantine/core";
-import GoogleIcon from "@/public/google-icon.svg";
 import GithubIcon from "@/public/github.svg";
-import { getGithubAuthDetails, getGoogleAuthDetails } from "@/api/lib";
+import { getGithubAuthDetails } from "@/api/lib";
 import { GetServerSidePropsContext } from "next";
 import Link from "next/link";
 
 interface SignupProps {
   githubAuthDetails: { to: string };
-  googleAuthDetails: { to: string };
 }
 
 export default function Signup({
-  googleAuthDetails,
   githubAuthDetails,
 }: SignupProps) {
   return (
@@ -33,16 +30,6 @@ export default function Signup({
             Sign Up
           </Text>
           <Stack spacing="md" style={{ width: "100%" }}>
-            <Anchor href={googleAuthDetails.to}>
-              <Button
-                size="lg"
-                variant="outline"
-                fullWidth
-                leftIcon={<GoogleIcon />}
-              >
-                Sign up with Google
-              </Button>
-            </Anchor>
             <Anchor href={githubAuthDetails.to}>
               <Button
                 size="lg"
@@ -63,14 +50,12 @@ export default function Signup({
 }
 
 export async function getServerSideProps(ctx: GetServerSidePropsContext) {
-  const googleAuthDetails = await getGoogleAuthDetails();
   const githubAuthDetails = await getGithubAuthDetails();
   const { code, state } = ctx.query as Record<string, string>;
 
   if (!state)
     return {
       props: {
-        googleAuthDetails,
         githubAuthDetails,
       },
     };

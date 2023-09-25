@@ -1,6 +1,5 @@
 import Image from "next/image";
 import BannerVector from "@/public/banner-vector.png";
-import GoogleIcon from "@/public/google-icon.svg";
 import GithubIcon from "@/public/github.svg";
 
 import {
@@ -15,15 +14,13 @@ import {
 } from "@mantine/core";
 import { AppLayout } from "@/layouts/app-layout";
 import { sora } from "@/utils/fonts";
-import { getGithubAuthDetails, getGoogleAuthDetails } from "@/api/lib";
+import { getGithubAuthDetails } from "@/api/lib";
 import { useAuthStatus } from "@/hooks/auth";
 
 export default function Home({
   githubAuthDetails,
-  googleAuthDetails,
 }: {
   githubAuthDetails: { to: string };
-  googleAuthDetails: { to: string };
 }) {
   const { colorScheme } = useMantineColorScheme();
   const dark = colorScheme === "dark";
@@ -61,22 +58,6 @@ export default function Home({
           </Text>
           {!isAuthenticated && (
             <Group position="center" mt={16} mb={32}>
-              <Anchor href={googleAuthDetails.to}>
-                <Button
-                  size="lg"
-                  variant="outline"
-                  leftIcon={<GoogleIcon />}
-                  className={clsx(
-                    dark
-                      ? "text-white border-white"
-                      : "text-[##1B2063] border-[#1B2063]",
-                    "font-secondary hover:bg-transparent"
-                  )}
-                  style={{ fontWeight: 400 }}
-                >
-                  Continue with Google
-                </Button>
-              </Anchor>
               <Anchor href={githubAuthDetails.to}>
                 <Button
                   size="lg"
@@ -111,12 +92,10 @@ export default function Home({
 }
 
 export async function getServerSideProps() {
-  const googleAuthDetails = await getGoogleAuthDetails();
   const githubAuthDetails = await getGithubAuthDetails();
 
   return {
     props: {
-      googleAuthDetails,
       githubAuthDetails,
     },
   };

@@ -27,15 +27,6 @@ export function useUserDetails() {
   });
 }
 
-export function useGetGoogleLoginUrl() {
-  return useQuery({
-    queryKey: ["login-url", "google"],
-    queryFn: function (): Promise<AxiosResponse<{ to: string }>> {
-      return axiosInstance.get(`/auth/google?medium=google`);
-    },
-  });
-}
-
 export function useGetGithubLoginUrl() {
   return useQuery({
     queryKey: ["login-url", "github"],

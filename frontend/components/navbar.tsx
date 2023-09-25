@@ -22,12 +22,10 @@ import { useAuthStatus, useLogout } from "@/hooks/auth";
 
 import DarkModeToggle from "./dark-mode-toggle";
 import UserIcon from "@/public/user-icon.svg";
-import GoogleIcon from "@/public/google-icon.svg";
 import GithubIcon from "@/public/github.svg";
 import { LoginCurve } from "iconsax-react";
 import {
   useGetGithubLoginUrl,
-  useGetGoogleLoginUrl,
   useUserDetails,
 } from "@/api/dashboard";
 
@@ -44,8 +42,6 @@ export function Navbar() {
   const { colorScheme } = useMantineColorScheme();
   const dark = colorScheme === "dark";
   const logout = useLogout();
-
-  const { data: googleLogin } = useGetGoogleLoginUrl();
   const { data: githubLogin } = useGetGithubLoginUrl();
   const { data: userDetails, isLoading } = useUserDetails();
   return (
@@ -94,22 +90,6 @@ export function Navbar() {
                 {!isAuthenticated ? (
                   <Menu.Dropdown>
                     <Stack>
-                      <Anchor href={googleLogin?.data.to}>
-                        <Button
-                          size="lg"
-                          variant="outline"
-                          leftIcon={<GoogleIcon />}
-                          className={clsx(
-                            dark
-                              ? "text-white border-white"
-                              : "text-[##1B2063] border-[#1B2063]",
-                            "font-secondary hover:bg-transparent"
-                          )}
-                          style={{ fontWeight: 400 }}
-                        >
-                          Continue with Google
-                        </Button>
-                      </Anchor>
                       <Anchor href={githubLogin?.data.to}>
                         <Button
                           size="lg"

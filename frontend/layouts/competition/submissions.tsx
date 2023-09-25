@@ -1,6 +1,5 @@
 import {
   useGetGithubLoginUrl,
-  useGetGoogleLoginUrl,
   useGetSolutions,
 } from "@/api/dashboard";
 import { SubmissionsDrawer } from "@/components/submission-drawer";
@@ -8,7 +7,6 @@ import { useAuthStatus } from "@/hooks/auth";
 import { LoadingSkeleton } from "@/pages/challenges/[id]";
 import { formatDate, formatTime } from "@/utils/date-formatter";
 import { Solutions } from "@/utils/interfaces";
-import GoogleIcon from "@/public/google-icon.svg";
 import GithubIcon from "@/public/github.svg";
 import {
   Anchor,
@@ -35,7 +33,6 @@ export function Submissions({
   const dark = colorScheme === "dark";
   const router = useRouter();
   const [submissionsDrawerOpen, setSubmissionsDrawerOpen] = useState(false);
-  const { data: googleLogin } = useGetGoogleLoginUrl();
   const { data: githubLogin } = useGetGithubLoginUrl();
   const [currentSolution, setCurrentSolution] = useState<null | Solutions>(
     null
@@ -61,22 +58,6 @@ export function Submissions({
             </Text>
 
             <Group position="center">
-              <Anchor href={googleLogin?.data.to}>
-                <Button
-                  size="lg"
-                  variant="outline"
-                  leftIcon={<GoogleIcon />}
-                  className={clsx(
-                    dark
-                      ? "text-white border-white"
-                      : "text-[##1B2063] border-[#1B2063]",
-                    "font-secondary hover:bg-transparent"
-                  )}
-                  style={{ fontWeight: 400 }}
-                >
-                  Continue with Google
-                </Button>
-              </Anchor>
               <Anchor href={githubLogin?.data.to}>
                 <Button
                   size="lg"
