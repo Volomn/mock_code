@@ -44,6 +44,7 @@ export function SubmitDrawer({
     data: submissionData,
   } = useSubmitSolution(() => {
     // close();
+    setFiles([]);
     setIsSubmissionsDrawerOpen(true);
   });
 
