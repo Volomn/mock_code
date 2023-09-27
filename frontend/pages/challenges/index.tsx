@@ -127,7 +127,7 @@ function Competitions({ active }: { active: boolean }) {
   );
 }
 
-function Competition({ competition }: { competition: Competition }) {
+export function Competition({ competition }: { competition: Competition }) {
   const router = useRouter();
   const { colorScheme } = useMantineColorScheme();
   const dark = colorScheme === "dark";
