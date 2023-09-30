@@ -185,11 +185,12 @@ func (grid *Grid) GetProduct(productType int) *Product {
 }
 
 func (grid *Grid) CalculateScore() int {
-	totalScore := float32(0)
+	slog.Info("Calculating grid scores", "scores", grid.Scores)
+	totalScore := 0
 	for _, score := range grid.Scores {
-		score += score
+		totalScore += score
 	}
-	return int(totalScore)
+	return totalScore
 }
 
 func (grid *Grid) GetNumberOfCompletedOrders() int {
@@ -203,6 +204,7 @@ func (grid *Grid) GetNumberOfCompletedOrders() int {
 }
 
 func (grid *Grid) ProcessCommand(command string) (*Drone, error) {
+	slog.Info("Processing command", "commandStrings", command)
 	match, err := regexp.MatchString(`^(\d+)\s([LD])\s(\d+)\s(\d+)\s(\d+)$`, command)
 	if err != nil || match == false {
 		return nil, fmt.Errorf("Commangolangd %s is invalid", command)
@@ -214,12 +216,18 @@ func (grid *Grid) ProcessCommand(command string) (*Drone, error) {
 	productType, _ := strconv.Atoi(chars[3])
 	numberOfProducts, _ := strconv.Atoi(chars[4])
 
+	drone := grid.Drones[droneIndex]
+	product := grid.GetProduct(productType)
+
 	switch droneCommand {
 	case "L":
-		return grid.Drones[droneIndex].Load(grid.Warehourses[warehouseOrderIndex], *grid.GetProduct(productType), numberOfProducts)
+		warehouse := grid.Warehourses[warehouseOrderIndex]
+		slog.Info("Drone loading", "drone", drone.Index, "warehouse", warehouse.Index, "product", product.Type, "numberOfProducts", numberOfProducts)
+		return drone.Load(warehouse, *product, numberOfProducts)
 	case "D":
-		slog.Info("About to deliver", "gridOrders", grid.Orders, "warehouseOrderIndex", warehouseOrderIndex, "productType", productType, "numberOfProducts", numberOfProducts)
-		return grid.Drones[droneIndex].Deliver(grid.Orders[warehouseOrderIndex], *grid.GetProduct(productType), numberOfProducts)
+		order := grid.Orders[warehouseOrderIndex]
+		slog.Info("Drone delivering", "drone", drone.Index, "order", order.Index, "product", product.Type, "numberOfProducts", numberOfProducts)
+		return drone.Deliver(order, *product, numberOfProducts)
 	default:
 		return nil, fmt.Errorf("Command %s is invalid", command)
 	}
@@ -238,24 +246,31 @@ func (grid *Grid) Simulate(solution io.Reader) (*Grid, error) {
 	if err != nil {
 		return nil, fmt.Errorf("Invalid solution file")
 	}
+	slog.Info("Total number of commands", "totalNumberOfCommands", totalNumberOfCommands)
 
 	for i := 0; i < totalNumberOfCommands; i++ {
 		scanner.Scan()
 		command := scanner.Text()
 		drone, err := grid.ProcessCommand(command)
 		if err != nil {
+			slog.Info("Error processing command", "error", err.Error())
 			return nil, err
 		}
+		slog.Info("Drone turns after processing command", "drone", drone.Index, "droneTurns", drone.Turns, "gridTurns", grid.Turns)
 		if drone.Turns > grid.Turns-1 {
 			return nil, fmt.Errorf("Drone %d has exceeded it's maximum number of turns", drone.Index)
 		}
 		tmpNumberOfCompletedOrders = grid.GetNumberOfCompletedOrders()
 		// Check if any new orders have been completed
 		if tmpNumberOfCompletedOrders > numberOfCompletedOrders {
-			score := float64((grid.Turns-drone.Turns)/grid.Turns) * 100
+			slog.Info("new order completed", "tmpNumberOfCompletedOrders", tmpNumberOfCompletedOrders, "numberOfCompletedOrders", numberOfCompletedOrders, "gridTurns", grid.Turns, "droneTurns", drone.Turns)
+			score := float64((grid.Turns - drone.Turns)) / float64(grid.Turns) * 100
+			slog.Info("Computed score", "score", score)
 			grid.Scores = append(grid.Scores, int(math.Ceil(score)))
+			slog.Info("Scores acppended to grid", "grid.Scores", grid.Scores)
 			numberOfCompletedOrders = tmpNumberOfCompletedOrders
 		}
+		slog.Info("Number of complete orders", "numberOfCompleteOrders", numberOfCompletedOrders)
 	}
 	return grid, nil
 }
@@ -276,24 +291,32 @@ func GridFromInputFile(input io.Reader) (*Grid, error) {
 	numberOfDrones, _ := strconv.Atoi(gridLine[2])
 	totalNumberOfTurns, _ := strconv.Atoi(gridLine[3])
 	dronePayload, _ := strconv.Atoi(gridLine[4])
+	slog.Info("Grid line", "grid line string", gridLine, "numberOfRows", numberOfRows, "numberOfColumns", numberOfColumns, "numberOfDrones", numberOfDrones, "totalNumberOfTurns", totalNumberOfTurns, "dronePayload", dronePayload)
 
 	scanner.Scan()
 	productTypes, _ := strconv.Atoi(strings.Trim(scanner.Text(), " "))
+	slog.Info("Product types line", "productTypes", productTypes)
 
 	scanner.Scan()
 	productWeights := strings.Split(strings.Trim(scanner.Text(), " "), " ")
+	slog.Info("Product weights", "productWeights", productWeights)
 	for i := 0; i < productTypes; i++ {
 		productWeight, _ := strconv.Atoi(productWeights[i])
 		product := &Product{Type: i, Weight: productWeight}
 		products = append(products, product)
 	}
+	slog.Info("Products", "products", products)
 
 	scanner.Scan()
 	numberOfWarehouses, _ := strconv.Atoi(strings.Trim(scanner.Text(), " "))
+	slog.Info("Warehouses lines", "numberOfWarehouses", numberOfWarehouses)
 	for i := 0; i < numberOfWarehouses; i++ {
 		scanner.Scan()
 		warehouseLocationLine := strings.Split(strings.Trim(scanner.Text(), " "), " ")
+		slog.Info("Warehouse location", "locationLine", warehouseLocationLine)
+		scanner.Scan()
 		warehouseProductsLine := strings.Split(strings.Trim(scanner.Text(), " "), " ")
+		slog.Info("Warehouse product line", "productLine", warehouseProductsLine)
 		warehouseX, _ := strconv.Atoi(warehouseLocationLine[0])
 		warehouseY, _ := strconv.Atoi(warehouseLocationLine[1])
 		warehouseProducts := make([]int, len(warehouseProductsLine))
@@ -301,11 +324,14 @@ func GridFromInputFile(input io.Reader) (*Grid, error) {
 			warehouseProducts[productsIndex], _ = strconv.Atoi(warehouseProduct)
 		}
 		warehouse := &Warehouse{Index: i, X: warehouseX, Y: warehouseY, Products: warehouseProducts}
+		slog.Info("Warehouse is", "warehouse", warehouse)
 		warehouses = append(warehouses, warehouse)
 	}
+	slog.Info("warehouses parsed", "warehouses", warehouses)
 
 	scanner.Scan()
 	numberOfOrders, _ := strconv.Atoi(strings.Trim(scanner.Text(), " "))
+	slog.Info("number of orders", "numberOfOrders", numberOfOrders)
 	for i := 0; i < numberOfOrders; i++ {
 		scanner.Scan()
 		orderLocationLine := strings.Split(strings.Trim(scanner.Text(), " "), " ")
@@ -321,13 +347,17 @@ func GridFromInputFile(input io.Reader) (*Grid, error) {
 			orderProducts[productsIndex], _ = strconv.Atoi(orderProduct)
 		}
 		order := &Order{Index: i, X: orderX, Y: orderY, NumberOfProducts: numberOfOrderProducts, ProductTypes: orderProducts}
+		slog.Info("Order is", "order", order)
 		orders = append(orders, order)
 	}
+	slog.Info("Orders parsed", "orders", orders)
 
 	for i := 0; i < numberOfDrones; i++ {
 		drone := &Drone{Index: i, X: warehouses[0].X, Y: warehouses[0].Y, MaximumPayload: dronePayload, Turns: -1}
+		slog.Info("Drone is", "drone", drone)
 		drones = append(drones, drone)
 	}
+	slog.Info("Drones parsed", "drones", drones)
 
 	return &Grid{Warehourses: warehouses, Drones: drones, Orders: orders, Products: products, Rows: numberOfRows, Cols: numberOfColumns, Turns: totalNumberOfTurns}, nil
 }
@@ -352,11 +382,12 @@ func (judge *Judge) Delivery(input, solution io.Reader) (int, error) {
 	if error != nil {
 		return 0, error
 	}
-	slog.Info("Grid is", "grid", *grid)
+	// slog.Info("Grid is", "grid", *grid)
 	grid, error = grid.Simulate(solution)
 	if error != nil {
 		return 0, error
 	}
 	score = grid.CalculateScore()
+	slog.Info("Simulation score", "score", score)
 	return score, judgeError
 }

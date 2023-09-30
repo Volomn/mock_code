@@ -396,7 +396,6 @@ type Solution struct {
 }
 
 func (application *Application) SubmitSolution(userId uint, challengeId uint, solutions []Solution) (domain.Submission, error) {
-
 	user := application.UserRepo.GetById(userId)
 	if user == nil {
 		return domain.Submission{}, errors.New("User not found")
