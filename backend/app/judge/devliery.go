@@ -164,6 +164,11 @@ func (drone *Drone) Deliver(order *Order, product Product, number int) (*Drone, 
 	return drone, nil
 }
 
+func (drone *Drone) Wait(numberOfTurns int) (*Drone, error) {
+	drone.Turns += numberOfTurns
+	return drone, nil
+}
+
 type Grid struct {
 	Rows        int
 	Cols        int
@@ -205,29 +210,37 @@ func (grid *Grid) GetNumberOfCompletedOrders() int {
 
 func (grid *Grid) ProcessCommand(command string) (*Drone, error) {
 	slog.Info("Processing command", "commandStrings", command)
-	match, err := regexp.MatchString(`^(\d+)\s([LD])\s(\d+)\s(\d+)\s(\d+)$`, command)
+	match, err := regexp.MatchString(`^(\d+)\s([LDW])\s(\d+)\s?(\d+)?\s?(\d+)?$`, command)
 	if err != nil || match == false {
 		return nil, fmt.Errorf("Commangolangd %s is invalid", command)
 	}
 	chars := strings.Split(command, " ")
 	droneIndex, _ := strconv.Atoi(chars[0])
 	droneCommand := chars[1]
-	warehouseOrderIndex, _ := strconv.Atoi(chars[2])
-	productType, _ := strconv.Atoi(chars[3])
-	numberOfProducts, _ := strconv.Atoi(chars[4])
 
 	drone := grid.Drones[droneIndex]
-	product := grid.GetProduct(productType)
 
 	switch droneCommand {
 	case "L":
-		warehouse := grid.Warehourses[warehouseOrderIndex]
-		slog.Info("Drone loading", "drone", drone.Index, "warehouse", warehouse.Index, "product", product.Type, "numberOfProducts", numberOfProducts)
+		warehouseIndex, _ := strconv.Atoi(chars[2])
+		productType, _ := strconv.Atoi(chars[3])
+		numberOfProducts, _ := strconv.Atoi(chars[4])
+		product := grid.GetProduct(productType)
+		warehouse := grid.Warehourses[warehouseIndex]
+		slog.Info("Drone loading", "drone", drone.Index, "warehouse", warehouse.Index, "product", productType, "numberOfProducts", numberOfProducts)
 		return drone.Load(warehouse, *product, numberOfProducts)
 	case "D":
-		order := grid.Orders[warehouseOrderIndex]
-		slog.Info("Drone delivering", "drone", drone.Index, "order", order.Index, "product", product.Type, "numberOfProducts", numberOfProducts)
+		orderIndex, _ := strconv.Atoi(chars[2])
+		productType, _ := strconv.Atoi(chars[3])
+		numberOfProducts, _ := strconv.Atoi(chars[4])
+		product := grid.GetProduct(productType)
+		order := grid.Orders[orderIndex]
+		slog.Info("Drone delivering", "drone", drone.Index, "order", order.Index, "product", productType, "numberOfProducts", numberOfProducts)
 		return drone.Deliver(order, *product, numberOfProducts)
+	case "W":
+		numberOfTurnsToWait, _ := strconv.Atoi(chars[2])
+		slog.Info("Drone is waiting", "drone", drone.Index, "numberOfTurnsToWait", numberOfTurnsToWait)
+		return drone.Wait(numberOfTurnsToWait)
 	default:
 		return nil, fmt.Errorf("Command %s is invalid", command)
 	}
